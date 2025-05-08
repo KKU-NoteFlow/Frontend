@@ -1,11 +1,11 @@
-import React, { useState } from 'react'
+import React, {useState} from 'react'
 import { useNavigate } from 'react-router-dom'
 import '../css/Login.css' // CSS 파일을 별도로 연결
 
 export default function LoginPage() {
 
   const navigate = useNavigate()
-
+  
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
 
@@ -20,26 +20,30 @@ export default function LoginPage() {
           'Accept': 'application/json',
         },
         body: JSON.stringify({
-          loginId: username,    // loginId로 보내야 함
-          password: password    // password 필드
-        }),
+          loginId: username,     // ✅ 정확한 키 사용
+          password: password
+        })
       })
   
+      const data = await response.json()
+      
       if (response.ok) {
-        const data = await response.json()
         console.log('로그인 성공:', data)
-        // 예시: user_id를 localStorage에 저장
-        localStorage.setItem('user_id', data.user_id)
         navigate('/main')
       } else {
-        const err = await response.json()
-        alert(`로그인 실패: ${err.message || '잘못된 자격 증명입니다.'}`)
+        alert(data.message || '로그인 실패')
       }
     } catch (err) {
-      console.error('로그인 오류:', err)
+      console.error('연결 오류:', err)
       alert('서버와의 연결에 실패했습니다.')
     }
   }
+  
+  // const handleLogin = (e) => {
+  //   e.preventDefault()
+  //   // 로그인 검증 로직은 생략하고 바로 이동
+  //   navigate('/main')
+  // }
 
   const handleSocialLogin = (provider) => {
     window.location.href = `http://localhost:8000/auth/${provider}`;
@@ -56,8 +60,8 @@ export default function LoginPage() {
 
         {/* 로그인 입력 */}
         <form className="login-form" onSubmit={handleLogin}>
-          <input type="text" placeholder="아이디" className="login-input" />
-          <input type="password" placeholder="비밀번호" className="login-input" />
+          <input type="text" placeholder="아이디" className="login-input" value={username} onChange={(e) => setUsername(e.target.value)}/>
+          <input type="password" placeholder="비밀번호" className="login-input" value={password} onChange={(e) => setPassword(e.target.value)}/>
           <button type="submit" className="login-btn">로그인</button>
         </form>
 
