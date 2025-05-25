@@ -115,3 +115,30 @@
     color: #aaa;
   }
   
+  /* Main.css 맨 아래에 추가 */
+
+.note-detail {
+  padding: 24px;
+}
+
+.note-detail-title {
+  font-size: 28px;
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+.note-detail-meta {
+  font-size: 14px;
+  color: #888;
+  margin-bottom: 16px;
+}
+
+.note-detail-content {
+  line-height: 1.6;
+}
+
+/* disable 된 검색 input 스타일 */
+.main-search:disabled {
+  background: #f5f5f5;
+  cursor: default;
+}

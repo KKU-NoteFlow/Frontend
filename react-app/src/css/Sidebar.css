@@ -1,0 +1,59 @@
+/* src/css/Sidebar.css */
+.sidebar {
+  width: 240px;
+  padding: 16px;
+  background: #fafafa;
+  border-right: 1px solid #e0e0e0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.sidebar-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.sidebar-controls button {
+  flex: 1;
+  padding: 6px 8px;
+  font-size: 0.9rem;
+  border: 1px solid #ccc;
+  background: #fff;
+  cursor: pointer;
+}
+
+.btn-new-root {
+  background: #007bff;
+  color: #fff;
+  border-color: #007bff;
+}
+
+.folder-list,
+.folder-children {
+  list-style: none;
+  padding-left: 8px;
+  margin: 4px 0;
+}
+
+.folder-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 6px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.folder-label:hover {
+  background: rgba(0, 123, 255, 0.1);
+}
+
+.btn-new-child {
+  border: none;
+  background: none;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0 4px;
+}

@@ -19,6 +19,7 @@ export default function LoginPage() {
       });
       const data = await response.json();
       if (response.ok) {
+        localStorage.setItem('access_token', data.access_token)
         navigate('/main');
       } else {
         alert(data.message || '로그인 실패');
@@ -82,6 +83,7 @@ export default function LoginPage() {
                 });
                 const data = await res.json();
                 if (res.ok) {
+                  localStorage.setItem('access_token', data.access_token)
                   navigate('/main');
                 } else {
                   alert(data.message || '구글 로그인 실패');
