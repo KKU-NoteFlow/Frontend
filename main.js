@@ -1,6 +1,8 @@
 const { app, BrowserWindow } = require('electron')
 const path = require('path')
 
+app.disableHardwareAcceleration();
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1200,
@@ -12,7 +14,7 @@ function createWindow() {
   })
 
   // Vite dev 서버를 불러오기
-  win.loadURL('http://localhost:5173')
+  win.loadURL('http://localhost:5174')
 }
 
 app.whenReady().then(createWindow)
