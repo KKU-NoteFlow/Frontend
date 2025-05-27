@@ -8,6 +8,7 @@ import MainPage        from './screen/Main'
 import NewNotePage     from './screen/NewNotePage'
 import NoteDetail      from './screen/NoteDetail'
 import NaverCallback   from './screen/NaverCallback'
+import KakaoCallback   from './screen/KakaoCallback'
 
 import './App.css'
 
@@ -18,6 +19,7 @@ const App: React.FC = () => (
       <Route path="/"            element={<LoginPage />} />
       <Route path="/signup"      element={<SignupPage />} />
       <Route path="/naver/callback" element={<NaverCallback />} />
+      <Route path="/kakao/callback" element={<KakaoCallback />} />
 
       {/* --- 노트 관련 --- */}
       <Route path="/main"        element={<MainPage />} />
