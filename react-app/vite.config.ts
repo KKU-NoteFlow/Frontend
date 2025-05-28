@@ -9,9 +9,9 @@ export default defineConfig({
     }
   },
   server: {
-    host: '0.0.0.0',
-    port: 5173,
+    host: true,
+    port: 5174,
     strictPort: true,
-    open: false, // 자동 브라우저 열기 비활성화
+    open: true, // 자동 브라우저 열기 비활성화
   }
 })
