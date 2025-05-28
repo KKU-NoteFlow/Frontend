@@ -1,59 +1,134 @@
-/* src/css/Sidebar.css */
+:root {
+  --indent-step: 1.2rem;
+}
+
+/* 기본 레이아웃 */
 .sidebar {
-  width: 240px;
-  padding: 16px;
-  background: #fafafa;
+  width: 20vw;
+  padding: 0.2rem 1.1rem;
+  background: #f9f9f9;
   border-right: 1px solid #e0e0e0;
   height: 100vh;
   overflow-y: auto;
+  font-size: 0.85rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  box-sizing: border-box;
 }
 
-.sidebar-controls {
+/* 로고 */
+.sidebar-logo {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-bottom: 12px;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 1.2rem 0.6rem 1.8rem;
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #333;
+}
+.logo-icon {
+  width: 2.7rem;
+  height: 2.7rem;
 }
 
+/* 필터 버튼 */
 .sidebar-controls button {
-  flex: 1;
-  padding: 6px 8px;
-  font-size: 0.9rem;
-  border: 1px solid #ccc;
+  width: 100%;
+  padding: 0.6rem 0;
+  margin-bottom: 0.4rem;
+  font-size: 0.85rem;
+  border: 1px solid #d0d0d0;
+  border-radius: 0.4rem;
   background: #fff;
   cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+.sidebar-controls button:hover,
+.sidebar-controls button.active {
+  background: #e6f0ff;
+  border-color: #007aff;
+  color: #007aff;
 }
 
-.btn-new-root {
-  background: #007bff;
-  color: #fff;
-  border-color: #007bff;
+/* 계층별 들여쓰기 */
+.folder-section > .folder-list {
+  padding-left: var(--indent-step);
 }
-
-.folder-list,
 .folder-children {
+  padding-left: calc(var(--indent-step) * 2);
+}
+.note-list {
+  padding-left: calc(var(--indent-step) * 3);
   list-style: none;
-  padding-left: 8px;
-  margin: 4px 0;
+  margin: 0.2rem 0;
 }
 
+/* 폴더 라벨 */
 .folder-label {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 4px 6px;
-  cursor: pointer;
-  border-radius: 4px;
+  padding: 0.5rem 0.6rem;
+  margin-bottom: 0.2rem;
+  border-radius: 0.4rem;
+  transition: background 0.2s;
 }
-
+.folder-label span {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+}
 .folder-label:hover {
-  background: rgba(0, 123, 255, 0.1);
+  background: rgba(0, 122, 255, 0.08);
 }
 
+/* 새 자식 버튼: 기본 숨김 → 호버 시 표시 */
 .btn-new-child {
-  border: none;
-  background: none;
-  font-size: 1rem;
+  visibility: hidden;
+  width: 1.4rem; height: 1.4rem;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 0.3rem;
+  transition: visibility 0.2s;
+}
+.folder-label:hover .btn-new-child {
+  visibility: visible;
+}
+
+/* 노트 라벨 */
+.note-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.8rem;
+  margin-bottom: 0.2rem;
+  border-radius: 0.4rem;
+  font-size: 0.85rem;
+  transition: background 0.2s;
   cursor: pointer;
-  padding: 0 4px;
+}
+.note-label:hover {
+  background: #e6f0ff;
+}
+
+/* 컨텍스트 메뉴 */
+.context-menu {
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  width: 140px;
+}
+.context-menu > div {
+  padding: 8px 12px;
+  cursor: pointer;
+}
+.context-menu > div:hover {
+  background: #f0f0f0;
+}
+
+.note-list.root {
+  padding-left: 1.2rem;  /* root 폴더용 */
+}
+.note-list.nested {
+  padding-left: 1.8rem;  /* 하위 폴더용 */
 }

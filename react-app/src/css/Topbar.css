@@ -1,0 +1,129 @@
+/* src/css/TopBar.css */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.8rem 1.2rem;
+  border-bottom: 1px solid #e0e0e0;
+  background: #fff;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.topbar-new {
+  padding: 0.5rem 1rem;
+  background: #007aff;
+  color: #fff;
+  border: none;
+  border-radius: 0.4rem;
+  cursor: pointer;
+}
+
+.topbar-search {
+  flex: 1;
+  padding: 0.5rem 0.8rem;
+  border: 1px solid #d0d0d0;
+  border-radius: 0.4rem;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.topbar-fav,
+.topbar-settings {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0.3rem;
+  border-radius: 0.3rem;
+  transition: background 0.2s;
+}
+
+.topbar-fav:hover,
+.topbar-settings:hover {
+  background: #f0f0f0;
+}
+
+.settings-menu {
+  position: absolute;
+  top: 3.2rem;             /* 버튼 아래로 */
+  right: 1.2rem;           /* 버튼과 정렬 */
+  width: 200px;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  padding: 0.5rem 0;
+  z-index: 1000;
+}
+
+.settings-search {
+  width: calc(100% - 1rem);
+  margin: 0.4rem 0.5rem;
+  padding: 0.4rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.settings-item {
+  padding: 0.6rem 0.8rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.settings-item:hover {
+  background: #f0f0f0;
+}
+
+.settings-item.disabled {
+  color: #aaa;
+  cursor: default;
+}
+
+.settings-item.toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* 토글 스위치 */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 32px;
+  height: 16px;
+}
+.switch input { display:none; }
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #ccc;
+  border-radius: 16px;
+  transition: .2s;
+}
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 12px; width: 12px;
+  left: 2px; bottom: 2px;
+  background-color: white;
+  border-radius: 50%;
+  transition: .2s;
+}
+input:checked + .slider {
+  background-color: #007aff;
+}
+input:checked + .slider:before {
+  transform: translateX(16px);
+}

@@ -142,3 +142,38 @@
   background: #f5f5f5;
   cursor: default;
 }
+
+/* 마크다운 관련 css */
+.markdown-body h1 { font-size: 2em; margin: 0.67em 0; }
+.markdown-body h2 { font-size: 1.5em; margin: 0.75em 0; }
+.markdown-body h3 { font-size: 1.25em; margin: 0.83em 0; }
+.markdown-body p  { margin: 1em 0; line-height: 1.6; }
+.markdown-body blockquote {
+  margin: 1em 0; padding-left: 1em;
+  border-left: 4px solid #ddd; color: #666;
+}
+.markdown-body ul,
+.markdown-body ol {
+  margin: 1em 0 1em 2em;
+}
+.markdown-body code {
+  background: #f6f8fa;
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-family: SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+}
+.markdown-body pre {
+  background: #f6f8fa;
+  padding: 1em;
+  border-radius: 6px;
+  overflow-x: auto;
+}
+.markdown-body table {
+  border-collapse: collapse;
+  margin: 1em 0;
+}
+.markdown-body th,
+.markdown-body td {
+  border: 1px solid #ddd;
+  padding: 0.5em 1em;
+}

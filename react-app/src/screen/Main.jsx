@@ -31,27 +31,7 @@ export default function MainPage() {
 
   return (
     <div className="main-container">
-      <Sidebar onFilterChange={setFilter} />  {/* ← 사이드바 */}
       <main className="main-content">
-        <header className="main-header">
-          <button
-            className="main-new-note-btn"
-            onClick={() => navigate('/notes/new')}
-          >
-            + 새 노트
-          </button>
-          <input
-            className="main-search"
-            type="text"
-            placeholder="🔍 노트 검색"
-            onChange={e => {
-              const q = e.target.value.toLowerCase();
-              setNotes(prev =>
-                prev.filter(n => n.title.toLowerCase().includes(q))
-              );
-            }}
-          />
-        </header>
         <section className="main-note-list">
           {notes.map(note => (
             <div
