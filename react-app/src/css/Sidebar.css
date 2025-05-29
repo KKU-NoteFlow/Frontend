@@ -5,6 +5,7 @@
 /* 기본 레이아웃 */
 .sidebar {
   width: 20vw;
+  min-width: 200px;
   padding: 0.2rem 1.1rem;
   background: #f9f9f9;
   border-right: 1px solid #e0e0e0;
