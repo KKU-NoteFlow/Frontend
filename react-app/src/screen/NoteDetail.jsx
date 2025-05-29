@@ -1,30 +1,27 @@
-import React, { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
-import rehypeHighlight from 'rehype-highlight'
-import 'highlight.js/styles/github.css'
-import '../css/Main.css'
+import React, { useState, useEffect, useRef } from 'react'
+import { useParams, useNavigate, useOutletContext } from 'react-router-dom'
+import { Editor } from '@toast-ui/react-editor'
+import '@toast-ui/editor/dist/toastui-editor.css'
+import TopBar from '../components/Topbar'
 
 export default function NoteDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const editorRef = useRef()
   const [note, setNote] = useState(null)
-  const [content, setContent] = useState('')
   const [saving, setSaving] = useState(false)
+  const [theme, setTheme] = useState('light')  // 기본값은 light
+  const { setCurrentNote, toggleFavorite } = useOutletContext()
 
-  // 1) 노트 불러오기
+
   useEffect(() => {
     fetch(`${import.meta.env.VITE_API_BASE_URL}/api/v1/notes/${id}`, {
       headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` }
     })
-      .then(res => {
-        if (!res.ok) throw new Error('Not found')
-        return res.json()
-      })
+      .then(res => res.ok ? res.json() : Promise.reject())
       .then(data => {
         setNote(data)
-        setContent(data.content || '')
+        setCurrentNote(data)
       })
       .catch(() => {
         alert('노트를 불러올 수 없습니다.')
@@ -34,34 +31,28 @@ export default function NoteDetail() {
 
   if (!note) return null
 
-  // 첫 줄이 # 제목 패턴이면 헤딩으로 분리
-  const lines = content.split('\n')
-  const firstLineMatch = lines[0].match(/^#\s+(.*)/)
-  const displayTitle = firstLineMatch ? firstLineMatch[1] : note.title
-  const restContent = firstLineMatch ? lines.slice(1).join('\n') : content
-
-  // 2) 저장 핸들러
   const handleSave = async () => {
+    const instance = editorRef.current.getInstance()
+    const content = instance.getMarkdown()
+
     setSaving(true)
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/api/v1/notes/${id}`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('access_token')}`
-          },
-          body: JSON.stringify({
-            title: displayTitle,
-            content,
-            folder_id: note.folder_id  // ✅ 추가!
-          })
-        }
-      )
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/v1/notes/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('access_token')}`
+        },
+        body: JSON.stringify({
+          title: note.title,  // 제목은 자동 추출 안 할 경우 기존 title 유지
+          content,
+          folder_id: note.folder_id
+        })
+      })
       if (!res.ok) throw new Error('Save failed')
       const updated = await res.json()
       setNote(updated)
+      setCurrentNote(updated)
       alert('저장되었습니다.')
     } catch (e) {
       console.error(e)
@@ -71,19 +62,29 @@ export default function NoteDetail() {
     }
   }
 
+  const handleToggleFavorite = async () => {
+    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/v1/notes/${note.id}/favorite`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('access_token')}`
+      },
+      body: JSON.stringify({ is_favorite: !note.is_favorite })
+    })
+
+    if (res.ok) {
+      const updated = await res.json()
+      setNote(updated)
+      setCurrentNote(updated)
+    }
+  }
+
   return (
     <div className="main-container">
-      <main className="main-content" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-        {/* 상단: 자동 제목 + 저장 버튼 */}
-        <header className="main-header" style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-          <h1
-            className="note-detail-title"
-            style={{ flex: 1, fontSize: '1.5rem', margin: 0, padding: 0 }}
-          >
-            {displayTitle}
-          </h1>
+      <main className="main-content" style={{ padding: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+          <h1 style={{ flex: 1, fontSize: '1.5rem', margin: 0 }}>{note.title}</h1>
           <button
-            className="main-save-btn"
             onClick={handleSave}
             disabled={saving}
             style={{
@@ -91,51 +92,40 @@ export default function NoteDetail() {
               background: saving ? '#ccc' : '#007aff',
               color: '#fff',
               border: 'none',
-              borderRadius: '0.4rem',
-              cursor: saving ? 'default' : 'pointer'
+              borderRadius: '0.4rem'
             }}
           >
             {saving ? '저장중…' : '💾 저장'}
           </button>
-        </header>
-
-        {/* 에디터 + 프리뷰 */}
-        <div style={{ display: 'flex', flex: 1, gap: '2rem', overflow: 'hidden' }}>
-          {/* Markdown 에디터 */}
-          <textarea
-            value={content}
-            onChange={e => setContent(e.target.value)}
-            placeholder={`# 제목\n## 부제목\n- 리스트\n\
-\
-\`\`\`js\nconsole.log('코드블럭')\n\`\`\``}
+          {/* 다크모드 하고싶어서 버튼 만듦 근데 패키지 의존성 문제로 보류 */}
+          {/* <button
+            onClick={() => setTheme(prev => (prev === 'light' ? 'dark' : 'light'))}
             style={{
-              flex: 1,
-              padding: '1rem',
-              fontFamily: 'SFMono-Regular, Consolas, Menlo, monospace',
-              fontSize: '0.9rem',
-              border: '1px solid #e0e0e0',
-              borderRadius: '0.4rem',
-              resize: 'none',
-              height: '100%'
-            }}
-          />
-
-          {/* Markdown 프리뷰 */}
-          <div
-            className="markdown-body"
-            style={{
-              flex: 1,
-              padding: '1rem',
-              border: '1px solid #e0e0e0',
-              borderRadius: '0.4rem',
-              overflowY: 'auto'
+              marginLeft: 'auto',
+              background: 'transparent',
+              border: '1px solid #ccc',
+              borderRadius: '4px',
+              padding: '0.4rem 0.8rem',
+              cursor: 'pointer',
+              color: theme === 'dark' ? '#fff' : '#000',
+              backgroundColor: theme === 'dark' ? '#333' : '#f9f9f9'
             }}
           >
-            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
-              {restContent}
-            </ReactMarkdown>
-          </div>
+            {theme === 'dark' ? '🌞 Light Mode' : '🌙 Dark Mode'}
+          </button> */}
+
         </div>
+
+        <Editor
+          key={id}
+          ref={editorRef}
+          initialValue={note.content || ''}
+          previewStyle="vertical"
+          height="600px"
+          initialEditType="wysiwyg"
+          useCommandShortcut={true}
+          // theme={theme} //다크모드
+        />
       </main>
     </div>
   )

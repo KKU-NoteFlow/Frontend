@@ -1,16 +1,19 @@
-import React, { useState, useRef, useEffect } from 'react'
-import '../css/Topbar.css'    // 나중에 스타일 분리
+// src/components/Topbar.jsx
+import React, { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
+import '../css/Topbar.css'
 
-export default function TopBar({ 
+export default function TopBar({
   onNewNote,
-  searchValue,
-  onSearchChange,
-  onFavoritesClick
+  currentNote,
+  onToggleFavorite
 }) {
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState([])
   const [showSettings, setShowSettings] = useState(false)
   const btnRef = useRef(null)
+  const navigate = useNavigate()
 
-  // 바깥 클릭 시 닫기
   useEffect(() => {
     const onClickOutside = e => {
       if (btnRef.current && !btnRef.current.contains(e.target)) {
@@ -21,23 +24,70 @@ export default function TopBar({
     return () => document.removeEventListener('mousedown', onClickOutside)
   }, [])
 
+  useEffect(() => {
+    if (!query.trim()) {
+      setResults([])
+      return
+    }
+
+    fetch(`${import.meta.env.VITE_API_BASE_URL}/api/v1/notes`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('access_token')}`
+      }
+    })
+      .then(res => res.ok ? res.json() : Promise.reject())
+      .then(data => {
+        const filtered = data.filter(n =>
+          n.title.toLowerCase().includes(query.toLowerCase())
+        )
+        setResults(filtered)
+      })
+      .catch(err => {
+        console.error('노트 검색 실패:', err)
+      })
+  }, [query])
+
   return (
     <header className="topbar">
       <div className="topbar-left">
         <button className="topbar-new" onClick={onNewNote}>+ 새 노트</button>
-        <input
-          className="topbar-search"
-          type="text"
-          placeholder="🔍 노트 검색"
-          value={searchValue}
-          onChange={e => onSearchChange(e.target.value)}
-        />
+        <div className="search-container">
+          <input
+            className="topbar-search"
+            type="text"
+            placeholder="🔍 노트 제목 검색"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+          />
+          {results.length > 0 && (
+            <ul className="search-results">
+              {results.slice(0, 5).map(note => (
+                <li
+                  key={note.id}
+                  onClick={() => {
+                    navigate(`/notes/${note.id}`)
+                    setQuery('')
+                    setResults([])
+                  }}
+                >
+                  📝 {note.title}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
 
       <div className="topbar-actions">
-        <button className="topbar-fav" onClick={onFavoritesClick} aria-label="즐겨찾기">
-          ★
-        </button>
+        {currentNote && (
+          <button
+            className="topbar-fav"
+            onClick={onToggleFavorite}
+            aria-label="즐겨찾기"
+          >
+            {currentNote.is_favorite ? '⭐' : '☆'}
+          </button>
+        )}
         <button
           ref={btnRef}
           className="topbar-settings"
@@ -63,7 +113,6 @@ export default function TopBar({
                 <span className="slider" />
               </label>
             </div>
-            {/* 원하는 항목을 여기 추가 */}
           </div>
         )}
       </div>
