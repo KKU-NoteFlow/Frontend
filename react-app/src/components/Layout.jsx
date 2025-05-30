@@ -14,8 +14,29 @@ export default function Layout() {
   const [statusText, setStatusText] = useState('') // 녹음 상태 등
 
   const handleRecord = () => setStatusText('녹음이 진행중입니다')
-  const handleSummarize = () => setStatusText('요약을 수행 중입니다')
   const handleUpload = () => setStatusText('업로드 중입니다')
+
+  const handleSummarize = async () => {
+    if (!currentNote) return
+    setStatusText('요약을 수행 중입니다')
+    const res = await fetch(
+      `${import.meta.env.VITE_API_BASE_URL}/api/v1/notes/${currentNote.id}/summarize`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('access_token')}`
+        }
+      }
+    )
+    if (!res.ok) {
+      alert('요약에 실패했습니다')
+      setStatusText('')
+      return
+    }
+    const updated = await res.json()
+    setCurrentNote(updated)
+    setStatusText('요약 완료')
+  }
 
   // 즐겨찾기 토글 핸들러
   const toggleFavorite = async () => {
