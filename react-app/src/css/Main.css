@@ -1,146 +1,146 @@
 .main-container {
-    display: flex;
-    height: 100%;
-    width: 100%;
-    font-family: 'Arial', sans-serif;
-  }
-  
-  .main-sidebar {
-    width: 220px;
-    background-color: #f9f9f9;
-    border-right: 1px solid #ddd;
-    padding: 20px;
-  }
-  
-  .main-logo-box {
-    display: flex;
-    align-items: center;
-    margin-bottom: 32px;
-  }
-  
-  .main-logo-img {
-    width: 36px;
-    margin-right: 8px;
-  }
-  
-  .main-logo-text {
-    font-size: 20px;
-    font-weight: bold;
-    color: #111;
-  }
-  
-  .main-nav {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  
-  .main-nav-btn {
-    background: none;
-    border: none;
-    font-size: 15px;
-    color: black;
-    font-weight: 800;
-    text-align: left;
-    padding: 8px 12px;
-    cursor: pointer;
-    border-radius: 6px;
-  }
-  
-  .main-nav-btn:hover {
-    background-color: #e6f0ff;
-  }
-  
-  .main-content {
-    flex: 1;
-    padding: 24px;
-  }
-  
-  .main-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 24px;
-  }
-  
-  .main-new-note-btn {
-    padding: 10px 16px;
-    font-size: 14px;
-    font-weight: bold;
-    border: none;
-    border-radius: 6px;
-    background-color: #ddd;
-    color: black;
-    cursor: pointer;
-  }
-  
-  .main-search {
-    flex: 1;
-    padding: 10px 14px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    font-size: 14px;
-    background-color: #FFFFFF;
-  }
-  
-  .main-note-list {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-  }
-  
-  .main-note-item {
-    border-bottom: 1px solid #ddd;
-    padding-bottom: 16px;
-  }
-  
-  .main-note-title {
-    font-size: 16px;
-    font-weight: bold;
-    text-align: left;
-    margin: 0;
-    color: #111;
-  }
-  
-  .main-note-preview {
-    color: #999;
-    font-size: 14px;
-    text-align: left;
-    margin: 4px 0;
-  }
-  
-  .main-note-date {
-    text-align: right;
-    font-size: 12px;
-    color: #aaa;
-  }
-  
-  /* Main.css 맨 아래에 추가 */
+  display: flex;
+  height: 100%;
+  width: 100%;
+  font-family: 'Arial', sans-serif;
+}
 
-.note-detail {
+.main-sidebar {
+  width: 220px;
+  background-color: #f9f9f9;
+  border-right: 1px solid #ddd;
+  padding: 20px;
+}
+
+.main-logo-box {
+  display: flex;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.main-logo-img {
+  width: 36px;
+  margin-right: 8px;
+}
+
+.main-logo-text {
+  font-size: 20px;
+  font-weight: bold;
+  color: #111;
+}
+
+.main-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.main-nav-btn {
+  background: none;
+  border: none;
+  font-size: 15px;
+  color: black;
+  font-weight: 800;
+  text-align: left;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.main-nav-btn:hover {
+  background-color: #e6f0ff;
+}
+
+.main-content {
+  flex: 1;
   padding: 24px;
 }
 
-.note-detail-title {
-  font-size: 28px;
-  margin-bottom: 8px;
+.main-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.main-new-note-btn {
+  padding: 10px 16px;
+  font-size: 14px;
   font-weight: bold;
+  border: none;
+  border-radius: 6px;
+  background-color: #ddd;
+  color: black;
+  cursor: pointer;
+}
+
+.main-search {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: #FFFFFF;
+}
+
+.main-note-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.main-note-item {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 16px;
+}
+
+.main-note-title {
+  font-size: 16px;
+  font-weight: bold;
+  text-align: left;
+  margin: 0;
+  color: #111;
+}
+
+.main-note-preview {
+  color: #999;
+  font-size: 14px;
+  text-align: left;
+  margin: 4px 0;
+}
+
+.main-note-date {
+  text-align: right;
+  font-size: 12px;
+  color: #aaa;
+}
+
+/* Main.css 맨 아래에 추가 */
+
+.note-detail {
+padding: 24px;
+}
+
+.note-detail-title {
+font-size: 28px;
+margin-bottom: 8px;
+font-weight: bold;
 }
 
 .note-detail-meta {
-  font-size: 14px;
-  color: #888;
-  margin-bottom: 16px;
+font-size: 14px;
+color: #888;
+margin-bottom: 16px;
 }
 
 .note-detail-content {
-  line-height: 1.6;
+line-height: 1.6;
 }
 
 /* disable 된 검색 input 스타일 */
 .main-search:disabled {
-  background: #f5f5f5;
-  cursor: default;
+background: #f5f5f5;
+cursor: default;
 }
 
 /* 마크다운 관련 css */
@@ -149,31 +149,45 @@
 .markdown-body h3 { font-size: 1.25em; margin: 0.83em 0; }
 .markdown-body p  { margin: 1em 0; line-height: 1.6; }
 .markdown-body blockquote {
-  margin: 1em 0; padding-left: 1em;
-  border-left: 4px solid #ddd; color: #666;
+margin: 1em 0; padding-left: 1em;
+border-left: 4px solid #ddd; color: #666;
 }
 .markdown-body ul,
 .markdown-body ol {
-  margin: 1em 0 1em 2em;
+margin: 1em 0 1em 2em;
 }
 .markdown-body code {
-  background: #f6f8fa;
-  padding: 0.2em 0.4em;
-  border-radius: 3px;
-  font-family: SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+background: #f6f8fa;
+padding: 0.2em 0.4em;
+border-radius: 3px;
+font-family: SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
 }
 .markdown-body pre {
-  background: #f6f8fa;
-  padding: 1em;
-  border-radius: 6px;
-  overflow-x: auto;
+background: #f6f8fa;
+padding: 1em;
+border-radius: 6px;
+overflow-x: auto;
 }
 .markdown-body table {
-  border-collapse: collapse;
-  margin: 1em 0;
+border-collapse: collapse;
+margin: 1em 0;
 }
 .markdown-body th,
 .markdown-body td {
-  border: 1px solid #ddd;
-  padding: 0.5em 1em;
+border: 1px solid #ddd;
+padding: 0.5em 1em;
 }
+
+/* src/css/Main.css */
+
+/* ─────────────────────────────────────────────────────────────────
+   드래그 오버 시 강조 스타일 (파일 업로드 영역)
+   ───────────────────────────────────────────────────────────────── */
+   .main-file-list.drag-over {
+    background-color: #f0f8ff; /* 연한 하늘색 배경 */
+    border: 2px dashed #007aff; /* 파란색 점선 테두리 */
+    border-radius: 6px;
+  }
+  
+  /* 기존의 .main-file-list 기본 스타일은 그대로 유지 */
+  
