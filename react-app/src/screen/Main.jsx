@@ -1,7 +1,7 @@
 // src/screen/Main.jsx
-
 import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useOutletContext, useParams } from 'react-router-dom'
+import '@toast-ui/editor/dist/toastui-editor.css';
 import '../css/Main.css'
 
 export default function MainPage() {

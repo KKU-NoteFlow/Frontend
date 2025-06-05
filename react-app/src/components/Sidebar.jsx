@@ -1,5 +1,4 @@
-// src/components/Sidebar.jsx
-
+import { FaFolderPlus, FaStickyNote } from 'react-icons/fa';
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import '../css/Sidebar.css'
@@ -261,7 +260,6 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
 
     const API = import.meta.env.VITE_API_BASE_URL
     const token = localStorage.getItem('access_token')
-    console.log('[handleNewFolder] 호출됨 → parentId=', parentId, ', name=', name)
 
     try {
       const res = await fetch(`${API}/api/v1/folders`, {
@@ -272,7 +270,6 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
         },
         body: JSON.stringify({ name: name, parent_id: parentId })
       })
-      console.log('[handleNewFolder] 요청 바디 →', JSON.stringify({ name, parent_id: parentId }))
 
       if (!res.ok) {
         console.error('[handleNewFolder] 폴더 생성 실패:', res.status, await res.text())
@@ -280,17 +277,10 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
         return
       }
 
-      const created = await res.json()
-      console.log('[handleNewFolder] 폴더 생성 성공:', created)
-
-      // ① 서버에서 최신 폴더 목록을 다시 가져옴
       await loadFolders()
-
-      // ② 필터 초기화(‘내 폴더’ 탭)
       setActiveFilter('all')
       onFilterChange('all')
 
-      // ③ 폴더 생성 위치(부모 폴더)를 자동 확장
       if (parentId !== null) {
         setOpenMap((prev) => ({ ...prev, [parentId]: true }))
       }
@@ -307,7 +297,6 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
 
     const API = import.meta.env.VITE_API_BASE_URL
     const token = localStorage.getItem('access_token')
-    console.log('[handleNewNote] 호출됨 → folderId=', folderId, ', title=', title)
 
     try {
       const res = await fetch(`${API}/api/v1/notes`, {
@@ -318,7 +307,6 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
         },
         body: JSON.stringify({ title: title, content: '', folder_id: folderId })
       })
-      console.log('[handleNewNote] 요청 바디 →', JSON.stringify({ title, content: '', folder_id: folderId }))
 
       if (!res.ok) {
         console.error('[handleNewNote] 노트 생성 실패:', res.status, await res.text())
@@ -326,10 +314,6 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
         return
       }
 
-      const created = await res.json()
-      console.log('[handleNewNote] 노트 생성 성공:', created)
-
-      // 노트 목록 다시 로드
       await loadNotes()
     } catch (err) {
       console.error('[handleNewNote] 예외 발생:', err)
@@ -344,7 +328,6 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
 
     const API = import.meta.env.VITE_API_BASE_URL
     const token = localStorage.getItem('access_token')
-    console.log('[handleRenameNote] 호출됨 → noteId=', noteId, 'folderId=', folderId, ', newTitle=', newTitle)
 
     try {
       const res = await fetch(`${API}/api/v1/notes/${noteId}`, {
@@ -355,17 +338,12 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
         },
         body: JSON.stringify({ title: newTitle, folder_id: folderId })
       })
-      console.log('[handleRenameNote] 요청 바디 →', JSON.stringify({ title: newTitle, folder_id: folderId }))
 
       if (!res.ok) {
         console.error('[handleRenameNote] 노트 이름 변경 실패:', res.status, await res.text())
         return
       }
 
-      const updated = await res.json()
-      console.log('[handleRenameNote] 노트 이름 변경 성공:', updated)
-
-      // 노트 목록 다시 로드
       await loadNotes()
     } catch (err) {
       console.error('[handleRenameNote] 예외 발생:', err)
@@ -379,7 +357,6 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
 
     const API = import.meta.env.VITE_API_BASE_URL
     const token = localStorage.getItem('access_token')
-    console.log('[handleRenameFolder] 호출됨 → folderId=', folderId, ', newName=', name)
 
     try {
       const res = await fetch(`${API}/api/v1/folders/${folderId}`, {
@@ -390,17 +367,12 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
         },
         body: JSON.stringify({ name: name })
       })
-      console.log('[handleRenameFolder] 요청 바디 →', JSON.stringify({ name }))
 
       if (!res.ok) {
         console.error('[handleRenameFolder] 폴더 이름 변경 실패:', res.status, await res.text())
         return
       }
 
-      const updated = await res.json()
-      console.log('[handleRenameFolder] 폴더 이름 변경 성공:', updated)
-
-      // 폴더 목록 다시 로드
       await loadFolders()
     } catch (err) {
       console.error('[handleRenameFolder] 예외 발생:', err)
@@ -413,23 +385,18 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
 
     const API = import.meta.env.VITE_API_BASE_URL
     const token = localStorage.getItem('access_token')
-    console.log('[handleDeleteNote] 호출됨 → noteId=', noteId)
 
     try {
       const res = await fetch(`${API}/api/v1/notes/${noteId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       })
-      console.log('[handleDeleteNote] 요청 보냄 →', `DELETE ${API}/api/v1/notes/${noteId}`)
 
       if (!res.ok) {
         console.error('[handleDeleteNote] 노트 삭제 실패:', res.status, await res.text())
         return
       }
 
-      console.log('[handleDeleteNote] 노트 삭제 성공:', noteId)
-
-      // 노트 목록 다시 로드
       await loadNotes()
     } catch (err) {
       console.error('[handleDeleteNote] 예외 발생:', err)
@@ -442,23 +409,18 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
 
     const API = import.meta.env.VITE_API_BASE_URL
     const token = localStorage.getItem('access_token')
-    console.log('[handleDeleteFolder] 호출됨 → folderId=', folderId)
 
     try {
       const res = await fetch(`${API}/api/v1/folders/${folderId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       })
-      console.log('[handleDeleteFolder] 요청 보냄 →', `DELETE ${API}/api/v1/folders/${folderId}`)
 
       if (!res.ok) {
         console.error('[handleDeleteFolder] 폴더 삭제 실패:', res.status, await res.text())
         return
       }
 
-      console.log('[handleDeleteFolder] 폴더 삭제 성공:', folderId)
-
-      // 폴더 목록 다시 로드
       await loadFolders()
     } catch (err) {
       console.error('[handleDeleteFolder] 예외 발생:', err)
@@ -491,21 +453,15 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
           onDragStart={(e) => {
             e.dataTransfer.setData('folderId', node.id)
             e.dataTransfer.setData('type', 'folder')
-            console.log('[DragStart] folderId=', node.id, 'type=folder')
           }}
           onClick={() => {
-            // ① 폴더 열기/닫기 토글
             setOpenMap((prev) => ({ ...prev, [node.id]: !prev[node.id] }))
-            // ② 부모(Layout) 컴포넌트에 선택된 폴더 ID 전달
             if (onSelectFolder) onSelectFolder(node.id)
-            // ③ URL을 "/main/:folderId"로 변경
             navigate(`/main/${node.id}`)
           }}
           onContextMenu={(e) => {
             e.preventDefault()
-            // 노트 컨텍스트 메뉴 숨기기
             setNoteContextMenu({ visible: false, x: 0, y: 0, noteId: null, folderId: null })
-            // 폴더 컨텍스트 메뉴 표시
             setFolderContextMenu({ visible: true, x: e.clientX, y: e.clientY, folderId: node.id })
           }}
           onDrop={(e) => handleDrop(e, node.id)}
@@ -515,7 +471,9 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
         </div>
 
         {openMap[node.id] && node.children.length > 0 && (
-          <ul className="folder-children">{renderTree(node.children)}</ul>
+          <ul className="folder-children">
+            {renderTree(node.children)}
+          </ul>
         )}
 
         {openMap[node.id] && node.notes.length > 0 && (
@@ -528,7 +486,6 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
                 onDragStart={(e) => {
                   e.dataTransfer.setData('noteId', n.id)
                   e.dataTransfer.setData('type', 'note')
-                  console.log('[DragStart] noteId=', n.id, 'type=note')
                 }}
                 onClick={() => {
                   navigate(`/notes/${n.id}`)
@@ -537,7 +494,13 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
                 onContextMenu={(e) => {
                   e.preventDefault()
                   setFolderContextMenu({ visible: false, x: 0, y: 0, folderId: null })
-                  setNoteContextMenu({ visible: true, x: e.clientX, y: e.clientY, noteId: n.id, folderId: node.id })
+                  setNoteContextMenu({
+                    visible: true,
+                    x: e.clientX,
+                    y: e.clientY,
+                    noteId: n.id,
+                    folderId: node.id
+                  })
                 }}
               >
                 📝 {n.title}
@@ -561,6 +524,16 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
       >
         <img src="/logo.png" alt="NoteFlow Logo" className="logo-icon" />
         <span className="logo-text">NoteFlow</span>
+      </div>
+
+      {/* 새 폴더 & 새 노트 버튼 */}
+      <div className="sidebar-buttons">
+        <button onClick={() => handleNewFolder(null)} className="sidebar-btn">
+          <FaFolderPlus style={{ marginRight: '0.5rem' }} />
+        </button>
+        <button onClick={() => handleNewNote(null)} className="sidebar-btn">
+          <FaStickyNote style={{ marginRight: '0.5rem' }} />
+        </button>
       </div>
 
       <div className="sidebar-controls">
@@ -590,13 +563,42 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
           >
             내 폴더
           </button>
+
           {activeFilter === 'all' && (
             <ul className="folder-list">
+              {/* 1) 최상위 폴더 트리 */}
               {treeFolders.length === 0 ? (
-                <li style={{ color: '#777', padding: '0.5rem 1rem' }}>폴더가 없습니다.</li>
+                <li style={{ color: '#777', padding: '0.5rem 1rem' }}>
+                  폴더가 없습니다.
+                </li>
               ) : (
                 renderTree(treeFolders)
               )}
+
+              {/* 2) 폴더 없이 생성된 루트 노트 */}
+              {folderNoteMap[null]?.map((note) => (
+                <li
+                  key={note.id}
+                  className="note-label root"
+                  onClick={() => {
+                    navigate(`/notes/${note.id}`)
+                    if (onNoteSelect) onNoteSelect(note.id)
+                  }}
+                  onContextMenu={(e) => {
+                    e.preventDefault()
+                    setFolderContextMenu({ visible: false, x: 0, y: 0, folderId: null })
+                    setNoteContextMenu({
+                      visible: true,
+                      x: e.clientX,
+                      y: e.clientY,
+                      noteId: note.id,
+                      folderId: null
+                    })
+                  }}
+                >
+                  📝 {note.title}
+                </li>
+              ))}
             </ul>
           )}
         </div>
@@ -619,25 +621,61 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
       {folderContextMenu.visible && (
         <div
           className="context-menu"
-          style={{ top: folderContextMenu.y, left: folderContextMenu.x, position: 'fixed', zIndex: 1000 }}
+          style={{
+            top: folderContextMenu.y,
+            left: folderContextMenu.x,
+            position: 'fixed',
+            zIndex: 1000
+          }}
           ref={contextMenuRef}
         >
-          <div onClick={() => {
-            handleNewNote(folderContextMenu.folderId)
-            setFolderContextMenu({ visible: false, x: 0, y: 0, folderId: null })
-          }}>➕ 새 노트</div>
-          <div onClick={() => {
-            handleNewFolder(folderContextMenu.folderId)
-            setFolderContextMenu({ visible: false, x: 0, y: 0, folderId: null })
-          }}>➕ 새 폴더</div>
-          <div onClick={() => {
-            handleRenameFolder(folderContextMenu.folderId)
-            setFolderContextMenu({ visible: false, x: 0, y: 0, folderId: null })
-          }}>✏️ 이름 변경</div>
-          <div onClick={() => {
-            handleDeleteFolder(folderContextMenu.folderId)
-            setFolderContextMenu({ visible: false, x: 0, y: 0, folderId: null })
-          }}>🗑️ 폴더 삭제</div>
+          <div
+            onClick={() => {
+              handleNewNote(folderContextMenu.folderId)
+              setFolderContextMenu({ visible: false, x: 0, y: 0, folderId: null })
+            }}
+          >
+            ➕ 새 노트
+          </div>
+          <div
+            onClick={() => {
+              handleNewFolder(folderContextMenu.folderId)
+              setFolderContextMenu({
+                visible: false,
+                x: 0,
+                y: 0,
+                folderId: null
+              })
+            }}
+          >
+            ➕ 새 폴더
+          </div>
+          <div
+            onClick={() => {
+              handleRenameFolder(folderContextMenu.folderId)
+              setFolderContextMenu({
+                visible: false,
+                x: 0,
+                y: 0,
+                folderId: null
+              })
+            }}
+          >
+            ✏️ 이름 변경
+          </div>
+          <div
+            onClick={() => {
+              handleDeleteFolder(folderContextMenu.folderId)
+              setFolderContextMenu({
+                visible: false,
+                x: 0,
+                y: 0,
+                folderId: null
+              })
+            }}
+          >
+            🗑️ 폴더 삭제
+          </div>
         </div>
       )}
 
@@ -645,17 +683,42 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
       {noteContextMenu.visible && (
         <div
           className="context-menu"
-          style={{ top: noteContextMenu.y, left: noteContextMenu.x, position: 'fixed', zIndex: 1000 }}
+          style={{
+            top: noteContextMenu.y,
+            left: noteContextMenu.x,
+            position: 'fixed',
+            zIndex: 1000
+          }}
           ref={contextMenuRef}
         >
-          <div onClick={() => {
-            handleRenameNote(noteContextMenu.noteId, noteContextMenu.folderId)
-            setNoteContextMenu({ visible: false, x: 0, y: 0, noteId: null, folderId: null })
-          }}>✏️ 이름 변경</div>
-          <div onClick={() => {
-            handleDeleteNote(noteContextMenu.noteId)
-            setNoteContextMenu({ visible: false, x: 0, y: 0, noteId: null, folderId: null })
-          }}>🗑️ 노트 삭제</div>
+          <div
+            onClick={() => {
+              handleRenameNote(noteContextMenu.noteId, noteContextMenu.folderId)
+              setNoteContextMenu({
+                visible: false,
+                x: 0,
+                y: 0,
+                noteId: null,
+                folderId: null
+              })
+            }}
+          >
+            ✏️ 이름 변경
+          </div>
+          <div
+            onClick={() => {
+              handleDeleteNote(noteContextMenu.noteId)
+              setNoteContextMenu({
+                visible: false,
+                x: 0,
+                y: 0,
+                noteId: null,
+                folderId: null
+              })
+            }}
+          >
+            🗑️ 노트 삭제
+          </div>
         </div>
       )}
     </aside>
