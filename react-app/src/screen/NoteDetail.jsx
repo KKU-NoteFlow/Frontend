@@ -4,28 +4,28 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, useOutletContext } from 'react-router-dom'
 import { Editor } from '@toast-ui/react-editor'
 import '@toast-ui/editor/dist/toastui-editor.css'
+import axios from 'axios'
 
 export default function NoteDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const editorRef = useRef()
+  const editorRef = useRef(null)
   const [note, setNote] = useState(null)
   const [saving, setSaving] = useState(false)
   const [summarizing, setSummarizing] = useState(false)
   const { setCurrentNote } = useOutletContext()
-
-  // 업로드된 파일 목록 상태
   const [files, setFiles] = useState([])
-
-  // 미리보기 상태 (URL, MIME 타입, 파일명)
   const [previewUrl, setPreviewUrl] = useState(null)
   const [previewType, setPreviewType] = useState(null)
   const [previewName, setPreviewName] = useState(null)
 
   const token = localStorage.getItem('access_token')
 
-  // 1) 노트 데이터 로드
+  // ────────────────────────────────────────────────────────────────
+  // 1) 노트 데이터 로드 (id가 바뀔 때마다 호출)
+  // ────────────────────────────────────────────────────────────────
   useEffect(() => {
+    setNote(null) // 로딩 중 빈 화면 방지
     fetch(`${import.meta.env.VITE_API_BASE_URL}/api/v1/notes/${id}`, {
       headers: { Authorization: `Bearer ${token}` }
     })
@@ -40,7 +40,9 @@ export default function NoteDetail() {
       })
   }, [id, navigate, setCurrentNote, token])
 
-  // 2) 업로드된 파일 목록 로드
+  // ────────────────────────────────────────────────────────────────
+  // 2) 업로드된 파일 목록 로드 (note.folder_id가 바뀔 때마다)
+  // ────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!note) return
     const folderId = note.folder_id
@@ -62,31 +64,21 @@ export default function NoteDetail() {
       })
   }, [note, token])
 
-  // 3) typeWriter 함수
-  function typeWriter(editorRef, fullText, speed = 25, done = () => {}) {
-    const inst = editorRef.current?.getInstance()
-    if (!inst) return
+  // ────────────────────────────────────────────────────────────────
+  // 3) note.content가 바뀔 때마다 에디터에 내용 덮어쓰기
+  // ────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!note || !editorRef.current) return
+    const editorInstance = editorRef.current.getInstance()
+    // 노트 내용을 Markdown 형태로 에디터에 설정
+    editorInstance.setMarkdown(note.content ?? '')
+  }, [note])
 
-    let i = 0
-    inst.setMarkdown('')
-    inst.focus()
-
-    const step = () => {
-      i += 1
-      inst.setMarkdown(fullText.slice(0, i))
-      if (i < fullText.length) {
-        setTimeout(step, speed)
-      } else {
-        done()
-      }
-    }
-    step()
-  }
-
-  if (!note) return null
-
+  // ────────────────────────────────────────────────────────────────
   // 4) 노트 저장 핸들러
+  // ────────────────────────────────────────────────────────────────
   const handleSave = async () => {
+    if (!editorRef.current) return
     const content = editorRef.current.getInstance().getMarkdown()
     setSaving(true)
 
@@ -118,7 +110,9 @@ export default function NoteDetail() {
     }
   }
 
+  // ────────────────────────────────────────────────────────────────
   // 5) 노트 요약 핸들러
+  // ────────────────────────────────────────────────────────────────
   const handleSummarize = async () => {
     setSummarizing(true)
     try {
@@ -134,8 +128,22 @@ export default function NoteDetail() {
       setNote(updated)
       setCurrentNote(updated)
 
+      // 타입라이터 효과로 요약 결과를 타이핑
       setTimeout(() => {
-        typeWriter(editorRef, updated.content ?? '', 20, () => setSummarizing(false))
+        const editorInstance = editorRef.current.getInstance()
+        let i = 0
+        const fullText = updated.content ?? ''
+        editorInstance.setMarkdown('')
+        const step = () => {
+          i += 1
+          editorInstance.setMarkdown(fullText.slice(0, i))
+          if (i < fullText.length) {
+            setTimeout(step, 20)
+          } else {
+            setSummarizing(false)
+          }
+        }
+        step()
       }, 150)
     } catch {
       alert('요약에 실패했습니다.')
@@ -143,41 +151,47 @@ export default function NoteDetail() {
     }
   }
 
-  // 6) 파일 클릭 시 미리보기 핸들러
-  const handleFileClick = async (file_id, original_name, content_type) => {
+  // ────────────────────────────────────────────────────────────────
+  // 6) 이미지 업로드 훅
+  // ────────────────────────────────────────────────────────────────
+  const onImageUploadHook = async (blob, callback) => {
     try {
-      // 인증 없이 열리는 엔드포인트 호출
-      const res = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/api/v1/files/download/${file_id}`
+      const formData = new FormData()
+      formData.append('upload_file', blob, blob.name || 'image.png')
+      // 필요하다면 note.folder_id도 함께 보낼 수 있습니다.
+      // formData.append('folder_id', note.folder_id)
+
+      const res = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/api/v1/files/upload`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            Authorization: `Bearer ${token}`
+          }
+        }
       )
-      if (!res.ok) {
-        console.error('파일 로드 실패', res.status, await res.text())
-        return
+      if (res.status !== 200 && res.status !== 201) {
+        throw new Error('업로드 실패')
       }
-
-      const blob = await res.blob()
-      const url = window.URL.createObjectURL(blob)
-
-      setPreviewUrl(url)
-      setPreviewType(content_type)
-      setPreviewName(original_name)
+      // 백엔드가 { url, original_name, ... } 형태로 응답했을 때
+      const { url, original_name } = res.data
+      callback(url, original_name)
     } catch (err) {
-      console.error('미리보기 중 예외', err)
+      console.error('이미지 업로드 중 오류', err)
+      alert('이미지 업로드에 실패했습니다.')
     }
   }
 
-  // 7) 미리보기 닫기
-  const closePreview = () => {
-    if (previewUrl) window.URL.revokeObjectURL(previewUrl)
-    setPreviewUrl(null)
-    setPreviewType(null)
-    setPreviewName(null)
+  if (!note) {
+    // note가 아직 로드되지 않았으면 로딩 중 표시하거나 빈화면을 내보내도 좋습니다.
+    return <div style={{ padding: '1rem' }}>노트 로드 중…</div>
   }
 
   return (
     <div className="main-container">
       <main className="main-content" style={{ padding: '1rem' }}>
-        {/* 노트 제목 + 버튼 */}
+        {/* 제목 + 저장 버튼 */}
         <div
           style={{
             display: 'flex',
@@ -204,7 +218,8 @@ export default function NoteDetail() {
             {saving ? '저장중…' : '💾 저장'}
           </button>
 
-          <button
+          {/* 요약 버튼 예시 (필요하면 사용) */}
+          {/* <button
             onClick={handleSummarize}
             disabled={summarizing}
             style={{
@@ -216,168 +231,25 @@ export default function NoteDetail() {
             }}
           >
             {summarizing ? '요약중…' : '🧠 요약'}
-          </button>
+          </button> */}
         </div>
 
-        {/* 토스트UI 에디터 */}
+        {/* Toast UI Editor */}
         <Editor
-          key={id}
           ref={editorRef}
           initialValue={note.content ?? ''}
-          previewStyle="vertical"
-          height="600px"
+          previewStyle="none"    // 미리보기 제거
+          height="100vh"         // 화면 전체 높이
           initialEditType="markdown"
           useCommandShortcut={true}
+          hideModeSwitch={true}  // 하단 Markdown/WYSIWYG 토글 숨김
+          toolbarItems={[]}      // 툴바 완전 제거(필요하면 다시 채워도 됩니다)
+          hooks={{
+            addImageBlobHook: onImageUploadHook
+          }}
         />
 
-        {/* 업로드된 파일 목록 */}
-        <div style={{ marginTop: '2rem' }}>
-          <h3 style={{ marginBottom: '0.5rem' }}>
-            🗂️ 업로드된 파일 ({files.length})
-          </h3>
-          <ul style={{ listStyle: 'none', paddingLeft: 0, margin: 0 }}>
-            {files.map(f => (
-              <li
-                key={f.file_id}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  padding: '0.75rem 1rem',
-                  marginBottom: '0.5rem',
-                  background: '#f9f9f9',
-                  borderRadius: '0.4rem',
-                  cursor: 'pointer',
-                  transition: 'background 0.2s'
-                }}
-                onClick={() =>
-                  handleFileClick(f.file_id, f.original_name, f.content_type)
-                }
-                onMouseOver={e => (e.currentTarget.style.background = '#eef')}
-                onMouseOut={e => (e.currentTarget.style.background = '#f9f9f9')}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  {/* 파일 아이콘 */}
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="#555"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V8z" />
-                    <polyline points="14 2 14 8 20 8" />
-                  </svg>
-                  <span style={{ fontSize: '1rem', color: '#333' }}>
-                    {f.original_name}
-                  </span>
-                </div>
-                <small style={{ color: '#777', marginTop: '0.25rem' }}>
-                  {new Date(f.created_at).toLocaleString()}
-                </small>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* 미리보기 모달 (다운로드 기능 없음) */}
-        {previewUrl && (
-          <div
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              width: '100vw',
-              height: '100vh',
-              background: 'rgba(0, 0, 0, 0.6)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 1000
-            }}
-            onClick={closePreview}
-          >
-            <div
-              style={{
-                position: 'relative',
-                width: '80%',
-                maxWidth: '900px',
-                height: '80%',
-                background: '#fff',
-                borderRadius: '0.4rem',
-                overflow: 'hidden',
-                boxShadow: '0 2px 10px rgba(0,0,0,0.3)'
-              }}
-              onClick={e => e.stopPropagation()}
-            >
-              {/* 닫기 버튼 */}
-              <button
-                onClick={closePreview}
-                style={{
-                  position: 'absolute',
-                  top: '0.5rem',
-                  right: '0.5rem',
-                  background: 'transparent',
-                  border: 'none',
-                  fontSize: '1.5rem',
-                  cursor: 'pointer'
-                }}
-              >
-                ×
-              </button>
-
-              {/* 이미지 미리보기 */}
-              {previewType.startsWith('image/') && (
-                <img
-                  src={previewUrl}
-                  alt={previewName}
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'contain',
-                    background: '#000'
-                  }}
-                />
-              )}
-
-              {/* PDF 미리보기 */}
-              {previewType === 'application/pdf' && (
-                <iframe
-                  src={previewUrl}
-                  title={previewName}
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    border: 'none'
-                  }}
-                />
-              )}
-
-              {/* 그 외 파일: 미리보기 없음 메시지 */}
-              {!previewType.startsWith('image/') &&
-                previewType !== 'application/pdf' && (
-                  <div
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexDirection: 'column',
-                      padding: '1rem',
-                      textAlign: 'center'
-                    }}
-                  >
-                    <p style={{ color: '#333' }}>
-                      미리보기를 지원하지 않는 파일 형식입니다.
-                    </p>
-                  </div>
-                )}
-            </div>
-          </div>
-        )}
+        {/* 여기에 파일 목록이나 미리보기 코드가 필요하다면 추가 */}
       </main>
     </div>
   )

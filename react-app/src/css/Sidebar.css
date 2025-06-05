@@ -31,6 +31,40 @@
   height: 2.7rem;
 }
 
+.sidebar-buttons {
+  flex: 1;
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+/* 새 폴더, 새 노트 버튼 */
+.sidebar-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #007aff;   /* 파란색 배경 */
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 0.5rem 0.25rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.sidebar-btn svg {
+  margin-right: 0.35rem;
+  font-size: 1rem;
+}
+
+.sidebar-btn:hover {
+  background-color: #005ecb;
+}
+
 /* 필터 버튼 */
 .sidebar-controls button {
   width: 100%;

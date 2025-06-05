@@ -1,3 +1,5 @@
+@import "node_modules/@toast-ui/editor/dist/toastui-editor.css";
+
 .main-container {
   display: flex;
   height: 100%;
@@ -115,8 +117,6 @@
   color: #aaa;
 }
 
-/* Main.css 맨 아래에 추가 */
-
 .note-detail {
 padding: 24px;
 }
@@ -189,5 +189,100 @@ padding: 0.5em 1em;
     border-radius: 6px;
   }
   
-  /* 기존의 .main-file-list 기본 스타일은 그대로 유지 */
-  
+/* 기존의 .main-file-list 기본 스타일은 그대로 유지 */
+
+/* ----------------------------------------------------------------------------
+  1. Completely hide Write/Preview tabs, toolbar, and mode switch (if you already
+     had that, just leave it here; this is shown in full for clarity).
+   ---------------------------------------------------------------------------- */
+.toastui-editor-defaultUI .toastui-editor-tabs {
+  display: none   !important;  /* remove the Write/Preview tab bar */
+  height: 0       !important;
+  margin: 0       !important;
+  padding: 0      !important;
+  border: none    !important;
+  background: none!important;
+}
+.toastui-editor-defaultUI .toastui-editor-toolbar, 
+.toastui-editor-defaultUI .toastui-editor-mode-switch {
+  display: none   !important;  /* remove top toolbar and bottom Markdown/WYSIWYG toggle */
+  margin: 0       !important;
+  padding: 0      !important;
+  border: none    !important;
+  background: none!important;
+}
+.toastui-editor-defaultUI .toastui-editor-section {
+  border: none    !important;  /* remove any leftover border under the tab bar */
+}
+
+/* ----------------------------------------------------------------------------
+  2. Remove all “box” styling around the editor so it truly fills the container
+   ---------------------------------------------------------------------------- */
+.toastui-editor-defaultUI {
+  border: none             !important;
+  box-shadow: none         !important;
+  background: none         !important;
+  margin: 0                !important;
+  padding: 0               !important;
+  width: 100%              !important;
+  max-width: none          !important;
+}
+
+.toastui-editor-defaultUI 
+  .toastui-editor-main-container,
+.toastui-editor-defaultUI 
+  .toastui-editor-md-container {
+  border: none             !important;
+  margin: 0                !important;
+  padding: 0               !important;
+}
+
+/* ----------------------------------------------------------------------------
+  3. Force the Markdown pane (CodeMirror) to use full width and left alignment
+   ---------------------------------------------------------------------------- */
+/* Make sure the <div class="toastui-editor-md-editor"> wrapper is not centering */
+.toastui-editor-md-editor,
+.toastui-editor-md-wrapper {
+  display: block            !important;
+  width: 100%               !important;
+  margin: 0                 !important;
+  padding: 0                !important;
+}
+
+/* Force CodeMirror itself to fill 100% width and text-align left */
+.toastui-editor-md-editor .CodeMirror {
+  display: block            !important;
+  width: 100%               !important;
+  margin: 0                 !important;
+  padding: 0                !important;
+  text-align: start          !important; /* “Typed text” lines start at left */
+}
+
+/* CodeMirror stores each text line in a <div class="CodeMirror-line">… */
+.toastui-editor-md-editor .CodeMirror-line {
+  text-align: start          !important; /* Each line is left-aligned */
+}
+
+/* ----------------------------------------------------------------------------
+  4. If someone switches into WYSIWYG mode, also force left alignment there
+   ---------------------------------------------------------------------------- */
+.toastui-editor-wysiwyg-modes-view .ProseMirror {
+  width: 100%               !important;
+  margin: 0                 !important;
+  padding: 0                !important;
+  text-align: start          !important;
+}
+
+/* ----------------------------------------------------------------------------
+  5. The “rendered Markdown” area (previewStyle="none" makes this the only view)
+     also must be left-aligned
+   ---------------------------------------------------------------------------- */
+.toastui-editor-contents {
+  padding: 2rem              !important; /* Optional “comfort” padding */
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 1.05rem;
+  line-height: 1.8;
+  background: none           !important;
+  color: inherit;
+  text-align: left           !important; /* force the preview text to start at left */
+}
