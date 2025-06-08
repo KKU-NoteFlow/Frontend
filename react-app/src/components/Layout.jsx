@@ -1,48 +1,39 @@
 // src/components/Layout.jsx
-
 import React, { useState, useRef, useEffect } from 'react'
 import { Outlet, useNavigate, useParams } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import TopBar from './Topbar'
 import BottomBar from './Bottombar'
 import '../css/Layout.css'
-import '../css/Modal.css' // 모달 전용 스타일 (아래에 설명)
+import '../css/Modal.css'    // 모달 전용 스타일
 
 export default function Layout() {
   const navigate = useNavigate()
   const { folderId: folderIdParam } = useParams()
   const parsedFolderId = folderIdParam ? parseInt(folderIdParam, 10) : null
 
-  // ────────────────────────────────────────────────────────────────
   // 1) 검색, 필터, 현재 노트, 현재 폴더 상태
-  // ────────────────────────────────────────────────────────────────
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all')
   const [currentNote, setCurrentNote] = useState(null)
   const [selectedFolderId, setSelectedFolderId] = useState(parsedFolderId)
-
   useEffect(() => {
     setSelectedFolderId(parsedFolderId)
   }, [parsedFolderId])
 
-  // ────────────────────────────────────────────────────────────────
-  // 2) 녹음 / 요약 / OCR 상태 텍스트
-  // ────────────────────────────────────────────────────────────────
+  // 2) 녹음 / 요약 상태 텍스트
   const [statusText, setStatusText] = useState('')
-  const handleRecord = () => setStatusText('🔴 녹음이 진행중입니다...')
+  const handleRecord = () => setStatusText('녹음이 진행중입니다...')
   const handleSummarize = async () => {
     if (!currentNote) return
-    setStatusText('⏳ 요약을 수행 중입니다...')
+    setStatusText('요약을 수행 중입니다...')
     const API = import.meta.env.VITE_API_BASE_URL
     const token = localStorage.getItem('access_token')
 
     try {
       const res = await fetch(
         `${API}/api/v1/notes/${currentNote.id}/summarize`,
-        {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` }
-        }
+        { method: 'POST', headers: { Authorization: `Bearer ${token}` } }
       )
       if (!res.ok) {
         alert('요약에 실패했습니다')
@@ -51,7 +42,7 @@ export default function Layout() {
       }
       const updated = await res.json()
       setCurrentNote(updated)
-      setStatusText('✅ 요약 완료')
+      setStatusText('요약 완료')
     } catch (err) {
       console.error('[Layout] 요약 중 예외:', err)
       alert('요약 처리 중 오류가 발생했습니다.')
@@ -59,6 +50,7 @@ export default function Layout() {
     }
   }
 
+  // 3) 즐겨찾기 토글
   const toggleFavorite = async () => {
     if (!currentNote) return
     const API = import.meta.env.VITE_API_BASE_URL
@@ -70,9 +62,9 @@ export default function Layout() {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
+            Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ is_favorite: !currentNote.is_favorite })
+          body: JSON.stringify({ is_favorite: !currentNote.is_favorite }),
         }
       )
       if (res.ok) {
@@ -89,12 +81,10 @@ export default function Layout() {
 
   const handleNewNote = () => navigate('/notes/new')
 
-  // ────────────────────────────────────────────────────────────────
-  // 3) 파일 업로드 처리
-  // ────────────────────────────────────────────────────────────────
+  // 4) 파일 업로드 처리
   const fileInputRef = useRef()
-  const ocrInputRef = useRef()                 // OCR 전용 파일 input ref
   const [uploadTargetFolderId, setUploadTargetFolderId] = useState(null)
+  const [fileUploadTimestamp, setFileUploadTimestamp] = useState(0)
 
   const handleUploadClick = () => {
     if (selectedFolderId == null) {
@@ -102,10 +92,8 @@ export default function Layout() {
       return
     }
     setUploadTargetFolderId(selectedFolderId)
-    if (fileInputRef.current) fileInputRef.current.click()
+    fileInputRef.current && fileInputRef.current.click()
   }
-
-  const [fileUploadTimestamp, setFileUploadTimestamp] = useState(0)
 
   const handleFilesSelected = async (e) => {
     const files = e.target.files
@@ -127,13 +115,15 @@ export default function Layout() {
       formData.append('upload_file', file)
       formData.append('folder_id', String(folderIdToUpload))
 
-      console.log(`[Layout] 파일 업로드 요청 → "${file.name}" → 폴더 ${folderIdToUpload}`)
+      console.log(
+        `[Layout] 파일 업로드 요청 → "${file.name}" → 폴더 ${folderIdToUpload}`
+      )
 
       try {
         const res = await fetch(`${API}/api/v1/files/upload`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` },
-          body: formData
+          body: formData,
         })
         if (!res.ok) {
           console.error(
@@ -154,41 +144,38 @@ export default function Layout() {
     e.target.value = null
   }
 
-  // ────────────────────────────────────────────────────────────────
-  // 4) OCR 전용 파일 선택 처리 (OCR → 요약 → 노트 저장 → 모달 띄우기)
-  // ────────────────────────────────────────────────────────────────
-  // (1) 모달 표시를 위한 상태
+  // 5) OCR 전용 파일 선택 및 처리
+  const ocrInputRef = useRef()
   const [showModal, setShowModal] = useState(false)
   const [modalTitle, setModalTitle] = useState('')
   const [modalBody, setModalBody] = useState('')
 
   const handleOcrClick = () => {
     if (selectedFolderId == null) {
-      alert('먼저 사이드바에서 OCR을 수행할 폴더를 선택하세요.')
+      alert('OCR을 수행할 폴더를 선택하세요.')
       return
     }
-    if (ocrInputRef.current) ocrInputRef.current.click()
+    ocrInputRef.current && ocrInputRef.current.click()
   }
 
   const handleOcrSelected = async (e) => {
     const files = e.target.files
     if (!files || files.length === 0) return
 
-    const file = files[0]  // 첫 번째 파일만 처리
+    const file = files[0]
+    const baseName = file.name.replace(/\.[^/.]+$/, '')  // 수정: 확장자 제거
     const formData = new FormData()
     formData.append('ocr_file', file)
 
     const API = import.meta.env.VITE_API_BASE_URL
     const token = localStorage.getItem('access_token')
-
-    // OCR → 요약 진행 상태 표시
-    setStatusText('⏳ OCR 및 요약을 수행 중입니다...')
+    setStatusText('OCR 진행중...')
 
     try {
       const res = await fetch(`${API}/api/v1/files/ocr`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
-        body: formData
+        body: formData,
       })
       if (!res.ok) {
         alert('이미지 텍스트 변환에 실패했습니다.')
@@ -196,54 +183,25 @@ export default function Layout() {
         return
       }
 
-      // 서버로부터 { text, summary } 형태의 JSON 응답을 받음
-      const { text, summary } = await res.json()
+      // 변경: 백엔드에서 노트를 생성하고 note_id 반환
+      const { note_id, text, summary } = await res.json()
 
-      // (2) 요약 결과를 새로운 노트로 저장
-      let newNoteData = null
-      if (summary && summary.trim().length > 0) {
-        const notePayload = {
-          title: `[OCR 요약] ${file.name}`, 
-          content: summary,
-          folder_id: selectedFolderId
-        }
-        const noteRes = await fetch(`${API}/api/v1/notes`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify(notePayload)
-        })
-        if (noteRes.ok) {
-          newNoteData = await noteRes.json()
-        } else {
-          console.error(
-            '[Layout] 요약 노트 생성 실패:',
-            noteRes.status,
-            await noteRes.text()
-          )
-        }
-      }
+      // 변경: 생성된 노트 상세 정보를 한 번 더 조회하여 currentNote 설정
+      const noteRes = await fetch(`${API}/api/v1/notes/${note_id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const newNote = await noteRes.json()
+      setCurrentNote(newNote)
 
-      // (3) 모달에 렌더링할 내용 구성
-      let bodyHtml = `<h3>OCR 결과</h3><pre class="modal-pre">${text}</pre>`
-      if (summary && summary.trim().length > 0) {
+      // 모달 내용 구성
+      let bodyHtml = `<h3>${baseName} OCR 결과</h3><pre class="modal-pre">${text}</pre>`
+      if (summary?.trim()) {
         bodyHtml += `<h3>요약 결과</h3><pre class="modal-pre">${summary}</pre>`
-        if (newNoteData) {
-          bodyHtml += `<p>✅ 요약을 새 노트로 저장했습니다: “${newNoteData.title}”</p>`
-        } else {
-          bodyHtml += `<p style="color: #d00;">⚠️ 요약 노트 저장에 실패했습니다.</p>`
-        }
-      } else {
-        bodyHtml += `<p>⚠️ 요약된 내용이 없습니다.</p>`
       }
-
-      // (4) 모달 표시
-      setModalTitle('OCR & 요약 결과')
+      setModalTitle(`${baseName} OCR 결과`)
       setModalBody(bodyHtml)
       setShowModal(true)
-      setStatusText('✅ OCR 및 요약 완료')
+      setStatusText('OCR 완료')
     } catch (err) {
       console.error('[Layout] OCR 중 예외:', err)
       alert('OCR 처리 중 오류가 발생했습니다.')
@@ -253,7 +211,6 @@ export default function Layout() {
     }
   }
 
-  // 모달 닫기 함수
   const closeModal = () => {
     setShowModal(false)
     setModalTitle('')
@@ -296,11 +253,11 @@ export default function Layout() {
           onRecordClick={handleRecord}
           onSummarizeClick={handleSummarize}
           onUploadClick={handleUploadClick}
-          onOcrClick={handleOcrClick}  // BottomBar에 OCR 클릭 핸들러 전달
+          onOcrClick={handleOcrClick}
         />
       </div>
 
-      {/* 숨겨진 파일 input (폴더 업로드용) */}
+      {/* 숨겨진 파일 input (업로드용) */}
       <input
         type="file"
         ref={fileInputRef}
@@ -309,7 +266,7 @@ export default function Layout() {
         onChange={handleFilesSelected}
       />
 
-      {/* 숨겨진 파일 input (OCR용, single 파일 처리) */}
+      {/* 숨겨진 파일 input (OCR용) */}
       <input
         type="file"
         ref={ocrInputRef}
@@ -318,17 +275,14 @@ export default function Layout() {
         onChange={handleOcrSelected}
       />
 
-      {/*
-        ───────────────────────────────────────────────────────────────────
-        모달 컴포넌트 (showModal=true일 때 화면 중앙에 오버레이)
-        ───────────────────────────────────────────────────────────────────
-      */}
       {showModal && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>{modalTitle}</h2>
-              <button className="modal-close-btn" onClick={closeModal}>×</button>
+              <button className="modal-close-btn" onClick={closeModal}>
+                ×
+              </button>
             </div>
             <div
               className="modal-content"
