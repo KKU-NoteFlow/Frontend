@@ -21,7 +21,6 @@ export default function Layout() {
     setSelectedFolderId(parsedFolderId)
   }, [parsedFolderId])
 
-<<<<<<< HEAD
   // ────────────────────────────────────────────────────────────────
   // 2) 녹음 / 요약 / OCR 상태 텍스트
   // ────────────────────────────────────────────────────────────────
@@ -92,11 +91,6 @@ const handleRecord = async () => {
 };
 
   // 요약 관련
-=======
-  // 2) 녹음 / 요약 상태 텍스트
-  const [statusText, setStatusText] = useState('')
-  const handleRecord = () => setStatusText('녹음이 진행중입니다...')
->>>>>>> origin/main
   const handleSummarize = async () => {
     if (!currentNote) return
     setStatusText('요약을 수행 중입니다...')
