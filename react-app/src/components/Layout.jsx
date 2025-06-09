@@ -21,9 +21,82 @@ export default function Layout() {
     setSelectedFolderId(parsedFolderId)
   }, [parsedFolderId])
 
+<<<<<<< HEAD
+  // ────────────────────────────────────────────────────────────────
+  // 2) 녹음 / 요약 / OCR 상태 텍스트
+  // ────────────────────────────────────────────────────────────────
+// ──────────────────────────────────────────────
+// (수정) 2) 녹음 상태
+// ──────────────────────────────────────────────
+const [statusText, setStatusText] = useState('');
+const [isRecording, setIsRecording] = useState(false);
+const mediaRecorderRef = useRef(null);
+const audioChunksRef = useRef([]);
+
+const handleRecord = async () => {
+  if (!isRecording) {
+    // 🎙️ 녹음 시작
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mediaRecorder = new MediaRecorder(stream);
+    mediaRecorderRef.current = mediaRecorder;
+    audioChunksRef.current = [];
+
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        audioChunksRef.current.push(event.data);
+      }
+    };
+
+    mediaRecorder.onstop = async () => {
+      const blob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+      const formData = new FormData();
+      formData.append('file', blob, 'recording.wav');
+      formData.append('title', '녹음된 노트');
+
+      setStatusText('⏳ 텍스트 변환 중...');
+
+      try {
+        const API = import.meta.env.VITE_API_BASE_URL;
+        const token = localStorage.getItem('access_token');
+
+        const response = await fetch(`${API}/api/v1/files/audio`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          setStatusText('✅ 변환 완료');
+          alert('🎤 STT 결과:\n' + result.transcript);
+        } else {
+          setStatusText('❌ 변환 실패');
+          alert('STT 처리 실패: ' + (result.detail || '서버 오류'));
+        }
+      } catch (error) {
+        console.error('STT 업로드 실패:', error);
+        setStatusText('❌ 서버 오류');
+      }
+
+      setIsRecording(false);
+    };
+
+    mediaRecorder.start();
+    setStatusText('🔴 녹음이 진행중입니다...');
+    setIsRecording(true);
+  } else {
+    // ⏹️ 녹음 종료
+    mediaRecorderRef.current.stop();
+  }
+};
+
+  // 요약 관련
+=======
   // 2) 녹음 / 요약 상태 텍스트
   const [statusText, setStatusText] = useState('')
   const handleRecord = () => setStatusText('녹음이 진행중입니다...')
+>>>>>>> origin/main
   const handleSummarize = async () => {
     if (!currentNote) return
     setStatusText('요약을 수행 중입니다...')
@@ -250,6 +323,7 @@ export default function Layout() {
 
         <BottomBar
           statusText={statusText}
+          isRecording={isRecording}
           onRecordClick={handleRecord}
           onSummarizeClick={handleSummarize}
           onUploadClick={handleUploadClick}
