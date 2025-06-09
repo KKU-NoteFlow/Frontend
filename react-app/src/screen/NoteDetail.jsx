@@ -19,6 +19,8 @@ export default function NoteDetail() {
   // ────────────────────────────────────────────────────────────────
   // 1) 노트 로드
   // ────────────────────────────────────────────────────────────────
+  const hasFetched = useRef(false)
+  
   useEffect(() => {
     setNote(null)
     fetch(`${API}/api/v1/notes/${id}`, {

@@ -1,6 +1,6 @@
 // src/components/Layout.jsx
 import React, { useState, useRef, useEffect } from 'react'
-import { Outlet, useNavigate, useParams } from 'react-router-dom'
+import { Outlet, useNavigate, useParams, useLocation } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import TopBar from './Topbar'
 import BottomBar from './Bottombar'
@@ -17,6 +17,10 @@ export default function Layout() {
   const [filter, setFilter] = useState('all')
   const [currentNote, setCurrentNote] = useState(null)
   const [selectedFolderId, setSelectedFolderId] = useState(parsedFolderId)
+  const [statusText, setStatusText] = useState('');
+  const [isRecording, setIsRecording] = useState(false);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
   useEffect(() => {
     setSelectedFolderId(parsedFolderId)
   }, [parsedFolderId])
@@ -27,10 +31,9 @@ export default function Layout() {
 // ──────────────────────────────────────────────
 // (수정) 2) 녹음 상태
 // ──────────────────────────────────────────────
-const [statusText, setStatusText] = useState('');
-const [isRecording, setIsRecording] = useState(false);
-const mediaRecorderRef = useRef(null);
-const audioChunksRef = useRef([]);
+const { noteId } = useParams();
+const parsedNoteId = noteId ? parseInt(noteId, 10) : null;
+const location = useLocation();  // 컴포넌트 함수 내 상단에 위치해야 함
 
 const handleRecord = async () => {
   if (!isRecording) {
@@ -52,27 +55,47 @@ const handleRecord = async () => {
       formData.append('file', blob, 'recording.wav');
       formData.append('title', '녹음된 노트');
 
+      const API = import.meta.env.VITE_API_BASE_URL;
+      const token = localStorage.getItem('access_token');
+
+      // 현재 경로가 /notes/:id 형태인지 확인
+      const isNoteDetailPage = /^\/notes\/\d+$/.test(location.pathname);
+      const currentNoteId = isNoteDetailPage ? currentNote?.id : null;
+
+      if (currentNoteId) {
+        formData.append('note_id', currentNoteId);
+      } else if (selectedFolderId) {
+        formData.append('folder_id', selectedFolderId);
+      }
+
       setStatusText('⏳ 텍스트 변환 중...');
 
       try {
-        const API = import.meta.env.VITE_API_BASE_URL;
-        const token = localStorage.getItem('access_token');
-
         const response = await fetch(`${API}/api/v1/files/audio`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` },
-          body: formData
+          body: formData,
         });
 
         const result = await response.json();
 
-        if (response.ok) {
-          setStatusText('✅ 변환 완료');
-          alert('🎤 STT 결과:\n' + result.transcript);
-        } else {
+        if (!response.ok) {
           setStatusText('❌ 변환 실패');
           alert('STT 처리 실패: ' + (result.detail || '서버 오류'));
+          return;
         }
+
+        const transcript = result.transcript || '';
+
+        if (currentNoteId) {
+          // PATCH 직접 하지 않음: 백엔드에서 append 처리 완료
+          setStatusText('✅ 노트에 추가 완료');
+        } else {
+          setStatusText('✅ 새 노트 생성 완료');
+        }
+
+        alert(transcript);
+
       } catch (error) {
         console.error('STT 업로드 실패:', error);
         setStatusText('❌ 서버 오류');
@@ -89,6 +112,7 @@ const handleRecord = async () => {
     mediaRecorderRef.current.stop();
   }
 };
+
 
   // 요약 관련
   const handleSummarize = async () => {
