@@ -9,6 +9,14 @@ import '../css/Modal.css'    // 모달 전용 스타일
 
 export default function Layout() {
   const navigate = useNavigate()
+  const local = useLocation()
+
+  useEffect(() => {
+    if (!localStorage.getItem('access_token')) {
+      navigate('/', { replace: true })
+    }
+  }, [local.pathname, navigate])
+  
   const { folderId: folderIdParam } = useParams()
   const parsedFolderId = folderIdParam ? parseInt(folderIdParam, 10) : null
 

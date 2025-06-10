@@ -1,6 +1,8 @@
 // src/components/Topbar.jsx
 import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { MdOutlineStarOutline, MdOutlineStarPurple500 } from "react-icons/md";
+import { BsChevronLeft, BsChevronRight } from "react-icons/bs";
 import '../css/Topbar.css'
 
 export default function TopBar({
@@ -12,11 +14,15 @@ export default function TopBar({
   const [results, setResults] = useState([])
   const [showSettings, setShowSettings] = useState(false)
   const btnRef = useRef(null)
+  const menuRef = useRef(null)
   const navigate = useNavigate()
 
   useEffect(() => {
     const onClickOutside = e => {
-      if (btnRef.current && !btnRef.current.contains(e.target)) {
+      if (
+        btnRef.current && !btnRef.current.contains(e.target) &&
+        menuRef.current && !menuRef.current.contains(e.target)
+      ) {
         setShowSettings(false)
       }
     }
@@ -47,9 +53,20 @@ export default function TopBar({
       })
   }, [query])
 
+  const handleLogout = () => {
+    localStorage.removeItem('access_token')
+    navigate('/', { replace: true })
+  }
+
   return (
     <header className="topbar">
       <div className="topbar-left">
+        <div className="icon-btn" onClick={() => navigate(-1)} title="뒤로가기">
+          <BsChevronLeft />
+        </div>
+        <div className="icon-btn" onClick={() => navigate(1)} title="앞으로가기">
+          <BsChevronRight />
+        </div>
         <button className="topbar-new" onClick={onNewNote}>+ 새 노트</button>
         <div className="search-container">
           <input
@@ -80,13 +97,9 @@ export default function TopBar({
 
       <div className="topbar-actions">
         {currentNote && (
-          <button
-            className="topbar-fav"
-            onClick={onToggleFavorite}
-            aria-label="즐겨찾기"
-          >
-            {currentNote.is_favorite ? '⭐' : '☆'}
-          </button>
+          <div className="icon-btn" onClick={onToggleFavorite} title="즐겨찾기">
+            {currentNote.is_favorite ? <MdOutlineStarOutline /> : <MdOutlineStarPurple500 />}
+          </div>
         )}
         <button
           ref={btnRef}
@@ -98,7 +111,7 @@ export default function TopBar({
         </button>
 
         {showSettings && (
-          <div className="settings-menu">
+          <div className="settings-menu" ref={menuRef}>
             <input
               className="settings-search"
               type="text"
@@ -112,6 +125,9 @@ export default function TopBar({
                 <input type="checkbox" />
                 <span className="slider" />
               </label>
+            </div>
+            <div className="settings-item" onClick={handleLogout}>
+              로그아웃
             </div>
           </div>
         )}
