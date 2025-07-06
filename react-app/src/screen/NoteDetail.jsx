@@ -1,58 +1,41 @@
 // src/screen/NoteDetail.jsx
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate, useOutletContext } from 'react-router-dom'
-import { Editor } from '@toast-ui/react-editor'
-import '@toast-ui/editor/dist/toastui-editor.css'
+import MarkdownEditor from '../components/MarkdownEditor'
 import axios from 'axios'
+import '../css/NoteDetail.css'
 
 export default function NoteDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const editorRef = useRef(null)
   const [note, setNote] = useState(null)
+  const [html, setHtml] = useState('')       // 에디터 HTML 상태
   const [saving, setSaving] = useState(false)
-  const { setCurrentNote } = useOutletContext()
+  const { setCurrentNote, setOnSummarizeClick, setStatusText } = useOutletContext()
 
   const token = localStorage.getItem('access_token')
   const API = import.meta.env.VITE_API_BASE_URL
 
-  // ────────────────────────────────────────────────────────────────
   // 1) 노트 로드
-  // ────────────────────────────────────────────────────────────────
-  const hasFetched = useRef(false)
-  
   useEffect(() => {
-    setNote(null)
     fetch(`${API}/api/v1/notes/${id}`, {
       headers: { Authorization: `Bearer ${token}` }
     })
-      .then(res => (res.ok ? res.json() : Promise.reject()))
+      .then(res => res.ok ? res.json() : Promise.reject())
       .then(data => {
         setNote(data)
         setCurrentNote(data)
+        setHtml(data.contentHTML || data.content || '')  // 기존에 HTML 저장 필드가 있다면, 아니면 Markdown → HTML 처리 필요
       })
       .catch(() => {
         alert('노트를 불러올 수 없습니다.')
         navigate('/main')
       })
-  }, [id, API, token, navigate, setCurrentNote])
+  }, [id])
 
-  // ────────────────────────────────────────────────────────────────
-  // 2) 에디터에 내용 덮어쓰기
-  // ────────────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!note || !editorRef.current) return
-    const ed = editorRef.current.getInstance()
-    ed.setMarkdown(note.content ?? '')
-  }, [note])
-
-  // ────────────────────────────────────────────────────────────────
-  // 3) 저장 핸들러
-  // ────────────────────────────────────────────────────────────────
+  // 2) 저장
   const handleSave = async () => {
-    if (!editorRef.current) return
     setSaving(true)
-    const content = editorRef.current.getInstance().getMarkdown()
     try {
       const res = await fetch(`${API}/api/v1/notes/${id}`, {
         method: 'PATCH',
@@ -62,7 +45,7 @@ export default function NoteDetail() {
         },
         body: JSON.stringify({
           title: note.title,
-          content,
+          contentHTML: html,      // 서버 스키마에 맞춰서 contentHTML 로 보내세요
           folder_id: note.folder_id
         })
       })
@@ -78,106 +61,86 @@ export default function NoteDetail() {
     }
   }
 
-  // ────────────────────────────────────────────────────────────────
-  // 4) 파일 업로드 + 에디터에 즉시 삽입
-  // ────────────────────────────────────────────────────────────────
-  const uploadAndInsertImage = async file => {
+  // 3) 이미지 업로드 (Tiptap 에디터에 직접 삽입)
+  const handleImageUpload = async file => {
     const form = new FormData()
-    form.append('upload_file', file, file.name)
+    form.append('upload_file', file)
+    form.append('folder_id', note.folder_id)
+    const { data } = await axios.post(
+      `${API}/api/v1/files/upload`,
+      form,
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
+    return data.url  // { url, original_name }
+  }
+
+  // 4) 스트리밍 요약 핸들러
+  const handleSummarize = useCallback(async () => {
+    if (!note) return; // 👈 note가 없으면 실행하지 않도록 추가
+
+    setStatusText('⏳ 요약 중…');
+    const ctrl = new AbortController();
     try {
-      const { data } = await axios.post(
-        `${API}/api/v1/files/upload`,
-        form,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            Authorization: `Bearer ${token}`
+      const res = await fetch(`${API}/api/v1/notes/${note.id}/summarize`, {
+        method: 'POST',
+        headers: {
+          Accept: 'text/event-stream',
+          Authorization: `Bearer ${token}`,
+        },
+        signal: ctrl.signal,
+      });
+      if (!res.ok || !res.body) throw new Error();
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '', summaryHTML = '';
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        // Ollama 응답 형식에 맞게 파싱하는 로직이 더 안정적일 수 있습니다.
+        buffer.split('\n\n').forEach(chunk => {
+          if (chunk.startsWith('data: ')) {
+            const txt = chunk.slice(6);
+            summaryHTML += `<p>${txt}</p>`;
+            setHtml(prev => prev + txt);
           }
-        }
-      )
-      // 백엔드가 { url, original_name } 형태로 반환했다고 가정
-      const { url, original_name } = data
-      const ed = editorRef.current.getInstance()
-      // WYSIWYG 모드에서 즉시 <img> 삽입
-      ed.exec('AddImage', { imageUrl: url, altText: original_name })
-    } catch (err) {
-      console.error(err)
-      alert('.')
+        });
+      }
+      setStatusText('✅ 요약 완료');
+    } catch {
+      setStatusText('❌ 요약 실패');
     }
-  }
+  }, [API, token, note, setHtml, setStatusText]); // 👈 함수가 의존하는 모든 외부 변수/상태를 배열에 추가
 
-  // ────────────────────────────────────────────────────────────────
-  // 5) 드래그&드롭 처리
-  // ────────────────────────────────────────────────────────────────
-  const handleDragOver = e => {
-    e.preventDefault()
-  }
-  const handleDrop = async e => {
-    e.preventDefault()
-    const file = e.dataTransfer.files[0]
-    if (file) {
-      await uploadAndInsertImage(file)
+  // BottomBar 에서 호출할 함수 등록
+  useEffect(() => {
+    // useCallback으로 감싸진 handleSummarize는 note 상태가 바뀔 때만 변경됩니다.
+    if (setOnSummarizeClick) {
+      setOnSummarizeClick(() => handleSummarize);
     }
-  }
+  }, [handleSummarize, setOnSummarizeClick]);
 
-  // ────────────────────────────────────────────────────────────────
-  // 6) 툴바/Paste 이미지 업로드 훅 유지
-  // ────────────────────────────────────────────────────────────────
-  const onImageUploadHook = async (blob, callback) => {
-    const file = new File([blob], blob.name || `image-${Date.now()}.png`, { type: blob.type })
-    await uploadAndInsertImage(file)
-    // 마크다운 모드 일 때도 삽입할 수 있게 콜백 호출
-    callback(URL.createObjectURL(blob), file.name)
-    return false
-  }
-
-  if (!note) {
-    return <div style={{ padding: '1rem' }}>노트 로드 중…</div>
-  }
+  if (!note) return <div>노트 로드 중…</div>;
 
   return (
-    <div className="main-container">
-      <main className="main-content" style={{ padding: '1rem' }}>
-        {/* 헤더 */}
-        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
-          <h1 style={{ flex: 1, margin: 0, fontSize: '1.5rem' }}>{note.title}</h1>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            style={{
-              padding: '.6rem 1.2rem',
-              background: saving ? '#ccc' : '#007aff',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '4px'
-            }}
-          >
-            {saving ? '저장중…' : '💾 저장'}
-          </button>
-        </div>
+    <div className="note-detail">
+     {/* 1) 헤더 영역: 제목 + 저장 버튼 */}
+     <div className="note-header">
+       <h1 className="note-title">{note.title}</h1>
+       <button className="save-btn" onClick={handleSave} disabled={saving}>
+         {saving ? '저장중…' : '💾 저장'}
+       </button>
+     </div>
 
-        {/* 드래그&드롭 컨테이너 */}
-        <div
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
-          style={{
-            border: '1px dashed #ddd',
-            borderRadius: '4px',
-            overflow: 'hidden'
-          }}
-        >
-          <Editor
-            ref={editorRef}
-            initialValue={note.content ?? ''}
-            height="100vh"
-            initialEditType="wysiwyg"
-            hideModeSwitch={true}
-            toolbarItems={[]}       
-            useCommandShortcut={true}
-            hooks={{ addImageBlobHook: onImageUploadHook }}
-          />
-        </div>
-      </main>
-    </div>
+      {/* 2) 에디터 영역 */}
+      <div className="note-editor">
+       <MarkdownEditor
+        html={html}
+        onUpdate={newHtml => setHtml(newHtml)}
+        uploadImage={handleImageUpload}  // 여기에 업로드 함수 전달
+      />
+     </div>
+   </div>
+
   )
 }

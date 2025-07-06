@@ -1,0 +1,39 @@
+/* src/css/NoteDetail.css */
+.note-detail {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;            /* 화면 전체 높이 차지 */
+}
+
+.note-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  background: #f5f5f5;       /* 원하시는 색상으로 조정 */
+  border-bottom: 1px solid #ddd;
+}
+
+.note-title {
+  margin: 0;
+  font-size: 1.75rem;
+}
+
+.save-btn {
+  padding: 0.5rem 1rem;
+  background: #007aff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.save-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.note-editor {
+  flex: 1;                   /* 헤더 제외한 나머지 공간 전부 */
+  overflow: auto;
+}

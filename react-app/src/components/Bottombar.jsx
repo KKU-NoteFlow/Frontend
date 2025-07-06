@@ -13,7 +13,7 @@ export default function BottomBar({ statusText, isRecording, onRecordClick, onSu
         <button onClick={onRecordClick}>
           {isRecording ? '녹음 종료' : '녹음'}
         </button>
-        <button onClick={onSummarizeClick}>요약</button>
+        <button disabled={!onSummarizeClick} onClick={onSummarizeClick}>요약</button>
         <button onClick={onUploadClick}>업로드</button>
         <button onClick={onOcrClick}>텍스트 변환</button>
       </div>
