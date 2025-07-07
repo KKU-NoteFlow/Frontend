@@ -3,7 +3,6 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MdOutlineStarOutline, MdOutlineStarPurple500 } from "react-icons/md";
 import { BsChevronLeft, BsChevronRight } from "react-icons/bs";
-import { TbReload } from "react-icons/tb";
 import '../css/Topbar.css'
 
 export default function TopBar({
@@ -59,19 +58,9 @@ export default function TopBar({
     navigate('/', { replace: true })
   }
 
-  const handleRefresh = () => {
-    // 현재 URL 그대로 새로고침
-    window.location.reload()
-    // 혹은 SPA 내에서 강제 리로드가 아니라 "다시 네비게이트"를 원하시면:
-    // navigate(location.pathname + location.search, { replace: true })
-  }
-
   return (
     <header className="topbar">
       <div className="topbar-left">
-        <div className="icon-btn" onClick={handleRefresh} title='새로고침'>
-          <TbReload />
-        </div>
         <div className="icon-btn" onClick={() => navigate(-1)} title="뒤로가기">
           <BsChevronLeft />
         </div>
@@ -108,7 +97,7 @@ export default function TopBar({
 
       <div className="topbar-actions">
         {currentNote && (
-          <div className="icon-btn-star" onClick={onToggleFavorite} title="즐겨찾기">
+          <div className="icon-btn" onClick={onToggleFavorite} title="즐겨찾기">
             {currentNote.is_favorite ? <MdOutlineStarOutline /> : <MdOutlineStarPurple500 />}
           </div>
         )}

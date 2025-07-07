@@ -29,7 +29,6 @@ export default function Layout() {
   const [isRecording, setIsRecording] = useState(false);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
-  const [onSummarizeClick, setOnSummarizeClick] = useState(null)
   useEffect(() => {
     setSelectedFolderId(parsedFolderId)
   }, [parsedFolderId])
@@ -121,6 +120,34 @@ const handleRecord = async () => {
     mediaRecorderRef.current.stop();
   }
 };
+
+
+  // 요약 관련
+  const handleSummarize = async () => {
+    if (!currentNote) return
+    setStatusText('요약을 수행 중입니다...')
+    const API = import.meta.env.VITE_API_BASE_URL
+    const token = localStorage.getItem('access_token')
+
+    try {
+      const res = await fetch(
+        `${API}/api/v1/notes/${currentNote.id}/summarize`,
+        { method: 'POST', headers: { Authorization: `Bearer ${token}` } }
+      )
+      if (!res.ok) {
+        alert('요약에 실패했습니다')
+        setStatusText('')
+        return
+      }
+      const updated = await res.json()
+      setCurrentNote(updated)
+      setStatusText('요약 완료')
+    } catch (err) {
+      console.error('[Layout] 요약 중 예외:', err)
+      alert('요약 처리 중 오류가 발생했습니다.')
+      setStatusText('')
+    }
+  }
 
   // 3) 즐겨찾기 토글
   const toggleFavorite = async () => {
@@ -316,8 +343,6 @@ const handleRecord = async () => {
               filter,
               selectedFolderId,
               fileUploadTimestamp,
-              setOnSummarizeClick,
-              setStatusText,
             }}
           />
         </div>
@@ -326,7 +351,7 @@ const handleRecord = async () => {
           statusText={statusText}
           isRecording={isRecording}
           onRecordClick={handleRecord}
-          onSummarizeClick={onSummarizeClick}
+          onSummarizeClick={handleSummarize}
           onUploadClick={handleUploadClick}
           onOcrClick={handleOcrClick}
         />
