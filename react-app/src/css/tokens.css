@@ -7,11 +7,11 @@
 :root {
   /* 색상 */
   /* Konkuk-inspired green theme (default) */
-  --nf-bg: #f3f7f4;          /* subtle greenish background */
+  --nf-bg: #eef3ec;          /* 편안한 옅은 그린 톤 */
   --nf-surface: #ffffff;
-  --nf-surface-2: #eef4ef;
+  --nf-surface-2: #f4f7f3;   /* surface 대비 강화 */
   --nf-text: #0b1720;
-  --nf-primary: #00923F;     /* KU green */
+  --nf-primary: #377b24;     /* 핵심 포인트 컬러 */
   --nf-muted: #64748b;
   --nf-border: #e5e7eb;
   --nf-success: #10b981;
@@ -50,11 +50,11 @@
 
 /* Dark mode tokens (body 혹은 html에 .dark가 추가될 때 적용) */
 .dark {
-  --nf-bg: #0b1410;
-  --nf-surface: #0f1a14;
-  --nf-surface-2: #0c1511;
+  --nf-bg: #0e1510;
+  --nf-surface: #121b14;
+  --nf-surface-2: #0f1812;
   --nf-text: #e6f4ec;
-  --nf-primary: #22c55e;     /* lighter green for dark */
+  --nf-primary: #49a23a;     /* 다크에서 조금 더 밝은 그린 */
   --nf-muted: #a1b5aa;
   --nf-border: #20402d;
   --nf-success: #34d399;
@@ -69,6 +69,11 @@
 :where(a, button, input, select, textarea, [role="button"]):focus-visible {
   outline: 2px solid var(--nf-primary);
   outline-offset: 2px;
+}
+
+/* 테마 전환 애니메이션(부드럽게) */
+html, body, .layout-container, .topbar, .sidebar, .layout-main {
+  transition: background-color .25s ease, color .25s ease, border-color .25s ease;
 }
 
 /* 표준 카드 컨테이너 유틸 (필요 시 선택적으로 사용) */

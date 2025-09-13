@@ -85,12 +85,12 @@ export default function DashboardTimetable() {
         )}
         <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: '64px repeat(5, 1fr)', gap: 8 }}>
           <div />
-          {days.map(d => <div key={d} style={{ textAlign: 'center', color: 'var(--nf-muted)' }}>{d}</div>)}
+          {days.map(d => <div key={d} style={{ textAlign: 'center', color: 'var(--nf-muted)', fontWeight: 700 }}>{d}</div>)}
           {hours.map(h => (
             <React.Fragment key={h}>
               <div style={{ textAlign: 'right', paddingRight: 4, color: 'var(--nf-muted)' }}>{String(h).padStart(2,'0')}:00</div>
               {days.map(d => (
-                <div key={d+String(h)} style={{ position: 'relative', border: '1px solid var(--nf-border)', borderRadius: 8, height: 56, background: 'var(--nf-surface-2)' }}>
+                <div key={d+String(h)} style={{ position: 'relative', border: '1px dashed var(--nf-border)', borderRadius: 10, height: 56, background: 'linear-gradient(180deg, var(--nf-surface), var(--nf-surface-2))' }}>
                   {items.filter(i => i.day === d && Math.floor(toMinutes(i.start)/60) === h)
                     .map(i => {
                       const startM = toMinutes(i.start)
@@ -99,10 +99,10 @@ export default function DashboardTimetable() {
                       const offset = startM - h*60
                       return (
                         <div key={i.id} className="nf-card" style={{
-                          position: 'absolute', left: 2, right: 2,
+                          position: 'absolute', left: 3, right: 3,
                           top: Math.max(0, offset * (56/60)), height: Math.min(56, dur * (56/60)),
-                          background: i.color, color: '#fff', borderColor: 'transparent',
-                          padding: 6, borderRadius: 8, boxShadow: 'var(--nf-shadow-sm)'
+                          background: `linear-gradient(180deg, ${i.color}, rgba(0,0,0,0.15))`, color: '#fff', borderColor: 'transparent',
+                          padding: 6, borderRadius: 10, boxShadow: 'var(--nf-shadow-md)'
                         }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 6 }}>
                             <div style={{ fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{i.title}</div>

@@ -4,7 +4,8 @@ import { Outlet, useNavigate, useParams, useLocation } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import TopBar from './Topbar'
 import BottomBar from './Bottombar'
-import ActionDock from './ActionDock'
+// 디자인 개선: 플로팅 도크 대신 상단 툴바로 배치
+import ActionToolbar from './ActionToolbar'
 import { Toast } from '../ui'
 import '../css/Layout.css'
 import '../css/Modal.css'    // 모달 전용 스타일
@@ -279,9 +280,9 @@ const handleRecord = async () => {
   const [modalBody, setModalBody] = useState('')
 
   const handleOcrClick = () => {
+    // 폴더가 없어도 진행 가능: 루트에 노트 생성
     if (selectedFolderId == null) {
-      alert('OCR을 수행할 폴더를 선택하세요.')
-      return
+      console.warn('폴더 미선택 상태로 OCR을 진행합니다. 노트는 루트에 생성됩니다.')
     }
     ocrInputRef.current && ocrInputRef.current.click()
   }
@@ -293,7 +294,10 @@ const handleRecord = async () => {
     const file = files[0]
     const baseName = file.name.replace(/\.[^/.]+$/, '')  // 수정: 확장자 제거
     const formData = new FormData()
-    formData.append('ocr_file', file)
+    formData.append('file', file)
+    if (selectedFolderId != null) {
+      formData.append('folder_id', String(selectedFolderId))
+    }
 
     const API = import.meta.env.VITE_API_BASE_URL
     const token = localStorage.getItem('access_token')
@@ -301,7 +305,9 @@ const handleRecord = async () => {
 
     try {
       setOpProgress({ visible: true, label: 'OCR 업로드', value: 30 })
-      const res = await fetch(`${API}/api/v1/files/ocr`, {
+      const langs = 'kor+eng'
+      const maxPages = 50
+      const res = await fetch(`${API}/api/v1/files/ocr?langs=${encodeURIComponent(langs)}&max_pages=${encodeURIComponent(maxPages)}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
@@ -314,8 +320,18 @@ const handleRecord = async () => {
         return
       }
 
-      // 변경: 백엔드에서 노트를 생성하고 note_id 반환
-      const { note_id, text, summary } = await res.json()
+      // 변경: 공통 OCR 응답 스키마 사용
+      const ocr = await res.json()
+      const { note_id, text, warnings = [], results = [] } = ocr
+      // 변경: 결과는 모달 대신 새 노트 화면으로 즉시 이동
+      if (note_id) {
+        navigate(`/notes/${note_id}`)
+        window.dispatchEvent(new Event('nf:notes-refresh'))
+        setStatusText('OCR 완료')
+        setOpProgress({ visible: true, label: '완료', value: 100 })
+        return
+      }
+      if (warnings.length) console.warn('[OCR warnings]', warnings)
       setOpProgress({ visible: true, label: 'OCR 처리 중', value: 70 })
 
       // 변경: 생성된 노트 상세 정보를 한 번 더 조회하여 currentNote 설정
@@ -325,10 +341,21 @@ const handleRecord = async () => {
       const newNote = await noteRes.json()
       setCurrentNote(newNote)
 
-      // 모달 내용 구성
-      let bodyHtml = `<h3>${baseName} OCR 결과</h3><pre class="modal-pre">${text}</pre>`
-      if (summary?.trim()) {
-        bodyHtml += `<h3>요약 결과</h3><pre class="modal-pre">${summary}</pre>`
+      // 모달 내용 구성 (페이지별 결과 + 병합 텍스트 + 경고)
+      let bodyHtml = `<h3>${baseName} OCR 결과</h3>`
+      if (Array.isArray(results) && results.length) {
+        const pages = results
+          .slice()
+          .sort((a,b) => (a.page||0)-(b.page||0))
+          .map(r => `<h4 style="margin:8px 0">Page ${r.page}</h4><pre class="modal-pre">${(r.text||'').replace(/[&<>]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[s]))}</pre>`)
+          .join('')
+        bodyHtml += pages
+      }
+      if (text?.trim()) {
+        bodyHtml += `<h3>병합 텍스트</h3><pre class="modal-pre">${text.replace(/[&<>]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[s]))}</pre>`
+      }
+      if (warnings.length) {
+        bodyHtml += `<div style="background:#fff7e6;border:1px solid #f5d39c;border-radius:8px;padding:8px;margin-top:8px;color:#8a6d3b"><b>경고</b><ul style="margin:4px 0 0 18px">${warnings.map(w=>`<li>${w.replace(/[&<>]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[s]))}</li>`).join('')}</ul></div>`
       }
       setModalTitle(`${baseName} OCR 결과`)
       setModalBody(bodyHtml)
@@ -371,6 +398,14 @@ const handleRecord = async () => {
           currentNote={currentNote}
           onToggleFavorite={toggleFavorite}
         />
+        {/* 작업 툴바: 녹음/요약/업로드/텍스트 변환 */}
+        <ActionToolbar
+          isRecording={isRecording}
+          onRecordClick={handleRecord}
+          onSummarizeClick={handleSummarize}
+          onUploadClick={handleUploadClick}
+          onOcrClick={handleOcrClick}
+        />
 
         <div className="layout-main" id="content">
           <Outlet
@@ -382,13 +417,9 @@ const handleRecord = async () => {
               fileUploadTimestamp,
             }}
           />
-          <ActionDock
-            isRecording={isRecording}
-            onRecordClick={handleRecord}
-            onSummarizeClick={handleSummarize}
-            onUploadClick={handleUploadClick}
-            onOcrClick={handleOcrClick}
-          />
+          {false && (
+            <div />
+          )}
         </div>
 
         {opProgress.visible && (
@@ -430,7 +461,7 @@ const handleRecord = async () => {
         type="file"
         ref={ocrInputRef}
         style={{ display: 'none' }}
-        accept="image/*"
+        accept=".png,.jpg,.jpeg,.tif,.tiff,.bmp,.pdf,.doc,.docx,.hwp"
         onChange={handleOcrSelected}
       />
 

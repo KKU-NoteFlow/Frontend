@@ -10,6 +10,7 @@
   min-width: 220px;
   background-color: var(--nf-surface);
   border-right: 1px solid var(--nf-border);
+  box-shadow: inset -1px 0 0 var(--nf-border);
   overflow-y: auto;
 }
 
@@ -25,7 +26,9 @@
   height: 56px;
   flex-shrink: 0;
   border-bottom: 1px solid var(--nf-border);
-  background: var(--nf-surface);
+  background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,255,255,0.9));
+  backdrop-filter: blur(6px);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.04);
   display: flex;
   align-items: center;
   padding: 0 1rem;
@@ -36,7 +39,7 @@
   overflow-y: auto;
   padding: var(--nf-space-5);
   padding-bottom: 60px;
-  background: var(--nf-surface);
+  background: radial-gradient(1200px 600px at 30% -10%, rgba(0,146,63,0.06), transparent), var(--nf-bg);
 }
 
 .bottombar {
