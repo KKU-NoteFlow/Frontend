@@ -1,0 +1,31 @@
+/*
+  무엇을/왜: 에디터 상세 뷰 좌측 본문/우측 패널(요약/키포인트/문제) 2단 레이아웃.
+  목적: Obsidian/Notion 레이아웃 레퍼런스 반영(콘텐츠 집중 + 보조 패널).
+*/
+
+.editor-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: var(--nf-space-5);
+}
+
+@media (max-width: 1024px) {
+  .editor-layout { grid-template-columns: 1fr; }
+}
+
+.editor-aside {
+  position: sticky;
+  top: 72px;
+  align-self: start;
+}
+
+.editor-panel {
+  background: var(--nf-surface);
+  border: 1px solid var(--nf-border);
+  border-radius: var(--nf-radius-lg);
+  box-shadow: var(--nf-shadow-sm);
+  padding: var(--nf-space-4);
+}
+
+.editor-meta { color: var(--nf-muted); font-size: var(--nf-font-sm); }
+

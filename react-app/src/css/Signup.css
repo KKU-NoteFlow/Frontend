@@ -1,21 +1,6 @@
-.signup-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    background-color: #f8f8f8;
-  }
+.signup-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: var(--nf-bg); }
   
-  .signup-box {
-    background-color: white;
-    padding: 40px;
-    border-radius: 14px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-    width: 100%;
-    max-width: 400px;
-    min-width: 320px;
-    text-align: center;
-  }
+.signup-box { background-color: var(--nf-surface); padding: 40px; border-radius: var(--nf-radius-lg); box-shadow: var(--nf-shadow-md); width: 100%; max-width: 400px; min-width: 320px; text-align: center; color: var(--nf-text); }
   
   .signup-logo-box {
     display: flex;
@@ -34,36 +19,12 @@
     color: #222;
   }
   
-  .signup-input {
-    width: 92.1%;
-    padding: 12px 14px;
-    margin-bottom: 14px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    font-size: 14px;
-    background-color: #ffffff;
-    color: #333333;
-  }
+.signup-input { width: 92.1%; padding: 12px 14px; margin-bottom: 14px; border: 1px solid var(--nf-border); border-radius: var(--nf-radius-md); font-size: 14px; background-color: var(--nf-surface); color: var(--nf-text); }
 
-  .signup-input::placeholder {
-    color: #333333;
-  }
+.signup-input::placeholder { color: var(--nf-muted); }
 
-  .signup-signup-btn {
-    width: 100%;
-    padding: 12px;
-    background-color: #0066ff;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-weight: bold;
-    cursor: pointer;
-    margin-bottom: 20px;
-  }
-  
-  .signup-signup-btn:hover {
-    background-color: #0055dd;
-  }
+.signup-signup-btn { width: 100%; padding: 12px; background-color: var(--nf-primary); color: #fff; border: none; border-radius: var(--nf-radius-md); font-weight: bold; cursor: pointer; margin-bottom: 20px; }
+.signup-signup-btn:hover { filter: brightness(0.95); }
   
   .signup-social-login {
     display: flex;
@@ -72,17 +33,7 @@
     margin-bottom: 18px;
   }
   
-  .signup-circle-btn {
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    border: none;
-    background-color: #eee;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-  }
+.signup-circle-btn { width: 44px; height: 44px; border-radius: 50%; border: none; background-color: var(--nf-surface-2); display: flex; justify-content: center; align-items: center; cursor: pointer; }
   
   .signup-kakao-btn {
     background-color: #fee500;

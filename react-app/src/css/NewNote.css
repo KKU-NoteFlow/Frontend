@@ -2,89 +2,61 @@
 
 /* 1. 컨테이너 */
 .newnote-container {
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    padding: 40px;
-    background-color: #f8f9fa;
-    min-height: 100vh;
-  }
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: var(--nf-space-6);
+  background-color: var(--nf-bg);
+  min-height: 100vh;
+}
   
   /* 2. 카드 형태의 폼 */
-  .newnote-form {
-    background-color: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-    width: 100%;
-    max-width: 600px;
-    padding: 32px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
+.newnote-form {
+  background-color: var(--nf-surface);
+  border-radius: var(--nf-radius-lg);
+  box-shadow: var(--nf-shadow-md);
+  width: 100%;
+  max-width: 600px;
+  padding: var(--nf-space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--nf-space-4);
+}
   
   /* 3. 제목 입력창 */
-  .newnote-title {
-    font-size: 1.25rem;
-    padding: 12px 16px;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    outline: none;
-  }
-  .newnote-title:focus {
-    border-color: #3366ff;
-    box-shadow: 0 0 0 3px rgba(51, 102, 255, 0.2);
-  }
+.newnote-title {
+  font-size: var(--nf-font-lg);
+  padding: 12px 16px;
+  border: 1px solid var(--nf-border);
+  border-radius: var(--nf-radius-md);
+  outline: none;
+  background: var(--nf-surface);
+  color: var(--nf-text);
+}
+.newnote-title:focus { border-color: var(--nf-primary); box-shadow: 0 0 0 3px color-mix(in oklab, var(--nf-primary) 25%, transparent); }
   
   /* 4. 내용 입력창 */
-  .newnote-content {
-    flex-grow: 1;
-    min-height: 240px;
-    padding: 12px 16px;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    resize: vertical;
-    outline: none;
-  }
-  .newnote-content:focus {
-    border-color: #3366ff;
-    box-shadow: 0 0 0 3px rgba(51, 102, 255, 0.2);
-  }
+.newnote-content {
+  flex-grow: 1;
+  min-height: 240px;
+  padding: 12px 16px;
+  border: 1px solid var(--nf-border);
+  border-radius: var(--nf-radius-md);
+  resize: vertical;
+  outline: none;
+  background: var(--nf-surface);
+  color: var(--nf-text);
+}
+.newnote-content:focus { border-color: var(--nf-primary); box-shadow: 0 0 0 3px color-mix(in oklab, var(--nf-primary) 25%, transparent); }
   
   /* 5. 버튼 그룹 */
-  .newnote-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-  }
+.newnote-actions { display: flex; justify-content: flex-end; gap: var(--nf-space-3); }
   
   /* 6. 저장 버튼 */
-  .newnote-save-btn {
-    background-color: #3366ff;
-    color: #ffffff;
-    border: none;
-    border-radius: 8px;
-    padding: 10px 24px;
-    font-size: 1rem;
-    font-weight: 500;
-    cursor: pointer;
-  }
-  .newnote-save-btn:hover {
-    background-color: #254eda;
-  }
+.newnote-save-btn { background-color: var(--nf-primary); color: #fff; border: none; border-radius: var(--nf-radius-md); padding: 10px 24px; font-size: 1rem; font-weight: 500; cursor: pointer; }
+.newnote-save-btn:hover { filter: brightness(0.95); }
   
   /* 7. 취소 버튼 */
-  .newnote-cancel-btn {
-    background-color: #f1f3f5;
-    color: #495057;
-    border: none;
-    border-radius: 8px;
-    padding: 10px 24px;
-    font-size: 1rem;
-    font-weight: 500;
-    cursor: pointer;
-  }
-  .newnote-cancel-btn:hover {
-    background-color: #e9ecef;
-  }
+.newnote-cancel-btn { background-color: var(--nf-surface-2); color: var(--nf-text); border: 1px solid var(--nf-border); border-radius: var(--nf-radius-md); padding: 10px 24px; font-size: 1rem; font-weight: 500; cursor: pointer; }
+.newnote-cancel-btn:hover { filter: brightness(0.98); }
   

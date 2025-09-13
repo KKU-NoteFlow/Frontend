@@ -5,10 +5,10 @@
 /* 기본 레이아웃 */
 .sidebar {
   width: 20vw;
-  min-width: 200px;
-  padding: 0.2rem 1.1rem;
-  background: #f9f9f9;
-  border-right: 1px solid #e0e0e0;
+  min-width: 220px;
+  padding: 0.6rem 0.8rem;
+  background: var(--nf-surface);
+  border-right: 1px solid var(--nf-border);
   height: 100vh;
   overflow-y: auto;
   font-size: 0.85rem;
@@ -21,10 +21,10 @@
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  padding: 1.2rem 0.6rem 1.8rem;
+  padding: 1.2rem 0.6rem 1rem;
   font-size: 1.1rem;
   font-weight: bold;
-  color: #333;
+  color: var(--nf-text);
 }
 .logo-icon {
   width: 2.7rem;
@@ -36,7 +36,7 @@
   display: flex;
   gap: 0.5rem;
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid var(--nf-border);
 }
 
 /* 새 폴더, 새 노트 버튼 */
@@ -45,10 +45,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #007aff;   /* 파란색 배경 */
+  background-color: var(--nf-primary);
   color: #fff;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--nf-radius-sm);
   padding: 0.5rem 0.25rem;
   font-size: 0.9rem;
   font-weight: 500;
@@ -61,9 +61,7 @@
   font-size: 1rem;
 }
 
-.sidebar-btn:hover {
-  background-color: #005ecb;
-}
+.sidebar-btn:hover { filter: brightness(0.95); }
 
 /* 필터 버튼 */
 .sidebar-controls button {
@@ -71,17 +69,17 @@
   padding: 0.6rem 0;
   margin-bottom: 0.4rem;
   font-size: 0.85rem;
-  border: 1px solid #d0d0d0;
-  border-radius: 0.4rem;
-  background: #fff;
+  border: 1px solid var(--nf-border);
+  border-radius: var(--nf-radius-sm);
+  background: var(--nf-surface);
   cursor: pointer;
   transition: background 0.2s, border-color 0.2s, color 0.2s;
 }
 .sidebar-controls button:hover,
 .sidebar-controls button.active {
-  background: #e6f0ff;
-  border-color: #007aff;
-  color: #007aff;
+  background: var(--nf-surface-2);
+  border-color: var(--nf-primary);
+  color: var(--nf-primary);
 }
 
 /* 계층별 들여쓰기 */
@@ -105,7 +103,7 @@
   padding: 0.5rem 0.6rem;
   margin-bottom: 0.2rem;
   border-radius: 0.4rem;
-  transition: background 0.2s;
+  transition: background 0.2s, border 0.2s;
 }
 .folder-label span {
   display: flex;
@@ -113,9 +111,8 @@
   gap: 0.4rem;
   font-size: 0.9rem;
 }
-.folder-label:hover {
-  background: rgba(0, 122, 255, 0.08);
-}
+.folder-label:hover { background: var(--nf-surface-2); }
+.folder-label.active { background: var(--nf-surface-2); border-left: 3px solid var(--nf-primary); }
 
 /* 새 자식 버튼: 기본 숨김 → 호버 시 표시 */
 .btn-new-child {
@@ -138,28 +135,19 @@
   margin-bottom: 0.2rem;
   border-radius: 0.4rem;
   font-size: 0.85rem;
-  transition: background 0.2s;
+  transition: background 0.2s, border 0.2s;
   cursor: pointer;
 }
-.note-label:hover {
-  background: #e6f0ff;
-}
+.note-label:hover { background: var(--nf-surface-2); }
+.note-label.active { background: var(--nf-surface-2); border-left: 3px solid var(--nf-primary); }
 
 /* 컨텍스트 메뉴 */
-.context-menu {
-  background: #fff;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  width: 140px;
-}
+.context-menu { background: var(--nf-surface); border: 1px solid var(--nf-border); border-radius: 6px; box-shadow: var(--nf-shadow-lg); width: 160px; }
 .context-menu > div {
   padding: 8px 12px;
   cursor: pointer;
 }
-.context-menu > div:hover {
-  background: #f0f0f0;
-}
+.context-menu > div:hover { background: var(--nf-surface-2); }
 
 .note-list.root {
   padding-left: 1.2rem;  /* root 폴더용 */

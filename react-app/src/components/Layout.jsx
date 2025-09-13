@@ -4,6 +4,8 @@ import { Outlet, useNavigate, useParams, useLocation } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import TopBar from './Topbar'
 import BottomBar from './Bottombar'
+import ActionDock from './ActionDock'
+import { Toast } from '../ui'
 import '../css/Layout.css'
 import '../css/Modal.css'    // 모달 전용 스타일
 
@@ -21,6 +23,26 @@ export default function Layout() {
   const [isRecording, setIsRecording] = useState(false);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
+  const [opProgress, setOpProgress] = useState({ visible: false, label: '', value: 0 });
+  const [toast, setToast] = useState({ open: false, message: '', variant: 'info' })
+
+  // 외부(대시보드 등)에서 공용 액션을 트리거할 수 있게 이벤트 리스너 제공
+  useEffect(() => {
+    const onRecord = () => handleRecord()
+    const onSummarize = () => handleSummarize()
+    const onUpload = () => handleUploadClick()
+    const onOcr = () => handleOcrClick()
+    window.addEventListener('nf:record', onRecord)
+    window.addEventListener('nf:summarize', onSummarize)
+    window.addEventListener('nf:upload', onUpload)
+    window.addEventListener('nf:ocr', onOcr)
+    return () => {
+      window.removeEventListener('nf:record', onRecord)
+      window.removeEventListener('nf:summarize', onSummarize)
+      window.removeEventListener('nf:upload', onUpload)
+      window.removeEventListener('nf:ocr', onOcr)
+    }
+  }, [])
   useEffect(() => {
     setSelectedFolderId(parsedFolderId)
   }, [parsedFolderId])
@@ -68,7 +90,7 @@ const handleRecord = async () => {
         formData.append('folder_id', selectedFolderId);
       }
 
-      setStatusText('⏳ 텍스트 변환 중...');
+      setStatusText('텍스트 변환 중...');
 
       try {
         const response = await fetch(`${API}/api/v1/files/audio`, {
@@ -80,7 +102,8 @@ const handleRecord = async () => {
         const result = await response.json();
 
         if (!response.ok) {
-          setStatusText('❌ 변환 실패');
+          setStatusText('변환 실패');
+          setToast({ open: true, message: 'STT 처리 실패', variant: 'error' })
           alert('STT 처리 실패: ' + (result.detail || '서버 오류'));
           return;
         }
@@ -89,27 +112,33 @@ const handleRecord = async () => {
 
         if (currentNoteId) {
           // PATCH 직접 하지 않음: 백엔드에서 append 처리 완료
-          setStatusText('✅ 노트에 추가 완료');
+          setStatusText('노트에 추가 완료');
+          setToast({ open: true, message: '노트에 추가 완료', variant: 'success' })
         } else {
-          setStatusText('✅ 새 노트 생성 완료');
+          setStatusText('새 노트 생성 완료');
+          setToast({ open: true, message: '새 노트 생성 완료', variant: 'success' })
         }
 
         alert(transcript);
 
       } catch (error) {
         console.error('STT 업로드 실패:', error);
-        setStatusText('❌ 서버 오류');
+        setStatusText('서버 오류');
+        setToast({ open: true, message: '서버 오류', variant: 'error' })
       }
 
       setIsRecording(false);
+      setOpProgress({ visible: false, label: '', value: 0 });
     };
 
     mediaRecorder.start();
-    setStatusText('🔴 녹음이 진행중입니다...');
+    setStatusText('녹음이 진행중입니다...');
+    setOpProgress({ visible: true, label: '녹음 중', value: 25 });
     setIsRecording(true);
   } else {
     // ⏹️ 녹음 종료
     mediaRecorderRef.current.stop();
+    setOpProgress((p) => ({ ...p, label: '전송 중', value: 60 }));
   }
 };
 
@@ -161,8 +190,10 @@ const handleRecord = async () => {
       if (res.ok) {
         const updated = await res.json()
         setCurrentNote(updated)
+        setToast({ open: true, message: '즐겨찾기 업데이트', variant: 'success' })
       } else {
         alert('즐겨찾기 변경 실패')
+        setToast({ open: true, message: '즐겨찾기 변경 실패', variant: 'error' })
       }
     } catch (err) {
       console.error('[Layout] 즐겨찾기 처리 중 예외:', err)
@@ -200,6 +231,7 @@ const handleRecord = async () => {
       return
     }
 
+    setOpProgress({ visible: true, label: '업로드 준비', value: 0 })
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
       const formData = new FormData()
@@ -222,17 +254,22 @@ const handleRecord = async () => {
             res.status,
             await res.text()
           )
+          setToast({ open: true, message: `업로드 실패: ${file.name}`, variant: 'error' })
         } else {
           console.log(`[Layout] 파일 업로드 성공: "${file.name}"`)
+          setToast({ open: true, message: `업로드 성공: ${file.name}`, variant: 'success' })
         }
       } catch (err) {
         console.error(`[Layout] 파일 업로드 중 예외: "${file.name}"`, err)
+        setToast({ open: true, message: `업로드 예외: ${file.name}`, variant: 'error' })
       }
+      setOpProgress({ visible: true, label: `업로드 진행 (${i + 1}/${files.length})`, value: Math.round(((i + 1) / files.length) * 100) })
     }
 
     setFileUploadTimestamp(Date.now())
     setUploadTargetFolderId(null)
     e.target.value = null
+    setOpProgress({ visible: false, label: '', value: 0 })
   }
 
   // 5) OCR 전용 파일 선택 및 처리
@@ -263,6 +300,7 @@ const handleRecord = async () => {
     setStatusText('OCR 진행중...')
 
     try {
+      setOpProgress({ visible: true, label: 'OCR 업로드', value: 30 })
       const res = await fetch(`${API}/api/v1/files/ocr`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
@@ -271,11 +309,14 @@ const handleRecord = async () => {
       if (!res.ok) {
         alert('이미지 텍스트 변환에 실패했습니다.')
         setStatusText('')
+        setOpProgress({ visible: false, label: '', value: 0 })
+        setToast({ open: true, message: 'OCR 변환 실패', variant: 'error' })
         return
       }
 
       // 변경: 백엔드에서 노트를 생성하고 note_id 반환
       const { note_id, text, summary } = await res.json()
+      setOpProgress({ visible: true, label: 'OCR 처리 중', value: 70 })
 
       // 변경: 생성된 노트 상세 정보를 한 번 더 조회하여 currentNote 설정
       const noteRes = await fetch(`${API}/api/v1/notes/${note_id}`, {
@@ -293,10 +334,14 @@ const handleRecord = async () => {
       setModalBody(bodyHtml)
       setShowModal(true)
       setStatusText('OCR 완료')
+      setToast({ open: true, message: 'OCR 완료', variant: 'success' })
+      setOpProgress({ visible: true, label: '완료', value: 100 })
     } catch (err) {
       console.error('[Layout] OCR 중 예외:', err)
       alert('OCR 처리 중 오류가 발생했습니다.')
       setStatusText('')
+      setOpProgress({ visible: false, label: '', value: 0 })
+      setToast({ open: true, message: 'OCR 예외', variant: 'error' })
     } finally {
       e.target.value = null
     }
@@ -327,7 +372,7 @@ const handleRecord = async () => {
           onToggleFavorite={toggleFavorite}
         />
 
-        <div className="layout-main">
+        <div className="layout-main" id="content">
           <Outlet
             context={{
               setCurrentNote,
@@ -337,7 +382,27 @@ const handleRecord = async () => {
               fileUploadTimestamp,
             }}
           />
+          <ActionDock
+            isRecording={isRecording}
+            onRecordClick={handleRecord}
+            onSummarizeClick={handleSummarize}
+            onUploadClick={handleUploadClick}
+            onOcrClick={handleOcrClick}
+          />
         </div>
+
+        {opProgress.visible && (
+          <div style={{ position: 'sticky', bottom: 50, padding: '0.5rem 1.2rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ flex: 1 }}>
+                <div className="nf-progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={opProgress.value} aria-label={opProgress.label}>
+                  <div className="nf-progress__bar" style={{ width: `${opProgress.value}%` }} />
+                </div>
+              </div>
+              <span style={{ color: 'var(--nf-muted)', fontSize: 'var(--nf-font-sm)' }}>{opProgress.label}</span>
+            </div>
+          </div>
+        )}
 
         <BottomBar
           statusText={statusText}
@@ -347,6 +412,8 @@ const handleRecord = async () => {
           onUploadClick={handleUploadClick}
           onOcrClick={handleOcrClick}
         />
+
+        <Toast open={toast.open} message={toast.message} variant={toast.variant} onClose={() => setToast({ ...toast, open: false })} />
       </div>
 
       {/* 숨겨진 파일 input (업로드용) */}

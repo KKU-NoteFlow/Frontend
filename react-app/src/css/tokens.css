@@ -1,0 +1,91 @@
+/*
+  변경 요약: 디자인 토큰(라이트/다크) 추가 및 포커스/타이포/섀도우 기본 정의.
+  목적: 로그인 이후 전 화면의 일관된 스타일 기초 제공. 기능/라우팅/시그니처 불변.
+*/
+
+/* Light mode tokens */
+:root {
+  /* 색상 */
+  /* Konkuk-inspired green theme (default) */
+  --nf-bg: #f3f7f4;          /* subtle greenish background */
+  --nf-surface: #ffffff;
+  --nf-surface-2: #eef4ef;
+  --nf-text: #0b1720;
+  --nf-primary: #00923F;     /* KU green */
+  --nf-muted: #64748b;
+  --nf-border: #e5e7eb;
+  --nf-success: #10b981;
+  --nf-warning: #f59e0b;
+  --nf-danger: #ef4444;
+
+  /* 타이포 스케일 */
+  --nf-font-xs: 0.75rem;
+  --nf-font-sm: 0.875rem;
+  --nf-font-base: 1rem;
+  --nf-font-lg: 1.125rem;
+  --nf-font-xl: 1.25rem;
+  --nf-font-2xl: 1.5rem;
+
+  /* 간격(4,8,12,16,24,32,40,48px) */
+  --nf-space-1: 0.25rem;
+  --nf-space-2: 0.5rem;
+  --nf-space-3: 0.75rem;
+  --nf-space-4: 1rem;
+  --nf-space-5: 1.5rem;
+  --nf-space-6: 2rem;
+  --nf-space-7: 2.5rem;
+  --nf-space-8: 3rem;
+
+  /* 라운딩 */
+  --nf-radius-sm: 4px;
+  --nf-radius-md: 8px;
+  --nf-radius-lg: 12px;
+  --nf-radius-xl: 16px;
+
+  /* 쉐도우 */
+  --nf-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --nf-shadow-md: 0 4px 10px rgba(0, 0, 0, 0.08);
+  --nf-shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.12);
+}
+
+/* Dark mode tokens (body 혹은 html에 .dark가 추가될 때 적용) */
+.dark {
+  --nf-bg: #0b1410;
+  --nf-surface: #0f1a14;
+  --nf-surface-2: #0c1511;
+  --nf-text: #e6f4ec;
+  --nf-primary: #22c55e;     /* lighter green for dark */
+  --nf-muted: #a1b5aa;
+  --nf-border: #20402d;
+  --nf-success: #34d399;
+  --nf-warning: #fbbf24;
+  --nf-danger: #f87171;
+}
+
+/* 접근성: 기본 포커스 링 */
+:where(a, button, input, select, textarea, [role="button"]) {
+  outline: none;
+}
+:where(a, button, input, select, textarea, [role="button"]):focus-visible {
+  outline: 2px solid var(--nf-primary);
+  outline-offset: 2px;
+}
+
+/* 표준 카드 컨테이너 유틸 (필요 시 선택적으로 사용) */
+.nf-card {
+  background: var(--nf-surface);
+  color: var(--nf-text);
+  border: 1px solid var(--nf-border);
+  border-radius: var(--nf-radius-lg);
+  box-shadow: var(--nf-shadow-sm);
+}
+
+/* 사용자 선호: 모션 감소 시 애니메이션 최소화 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -2,7 +2,7 @@
 
 import { FaFolderPlus, FaStickyNote } from 'react-icons/fa';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import '../css/Sidebar.css';
 
 export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }) {
@@ -28,6 +28,11 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
 
   const navigate = useNavigate();
   const contextMenuRef = useRef(null);
+  // 현재 활성 항목 파악(폴더/노트)
+  const params = useParams();
+  const location = useLocation();
+  const currentFolderId = params.folderId ? parseInt(params.folderId, 10) : null;
+  const currentNoteId = /^\/notes\//.test(location.pathname) && params.id ? parseInt(params.id, 10) : null;
 
   // ────────────────────────────────────────────────────────────────
   // 1) 폴더 목록 불러오기 (GET /api/v1/folders)
@@ -366,7 +371,7 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
         onDragOver={e => e.preventDefault()}
       >
         <div
-          className="folder-label"
+          className={`folder-label ${currentFolderId === node.id ? 'active' : ''}`}
           draggable
           onDragStart={e => {
             e.dataTransfer.setData('folderId', node.id);
@@ -383,7 +388,10 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
             setFolderContextMenu({ visible: true, x:e.clientX, y:e.clientY, folderId: node.id });
           }}
         >
-          📁 {node.name}
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{node.name}</span>
+            <span className="nf-badge" aria-label="노트 개수">{node.notes?.length || 0}</span>
+          </span>
         </div>
 
         {openMap[node.id] && node.children.length > 0 && (
@@ -395,7 +403,7 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
             {node.notes.map(n => (
               <li
                 key={n.id}
-                className="note-label"
+                className={`note-label ${currentNoteId === n.id ? 'active' : ''}`}
                 draggable
                 onDragStart={e => {
                   e.dataTransfer.setData('noteId', n.id);
@@ -411,7 +419,7 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
                   setNoteContextMenu({ visible: true, x:e.clientX, y:e.clientY, noteId: n.id, folderId: node.id });
                 }}
               >
-                📝 {n.title}
+                {n.title}
               </li>
             ))}
           </ul>
@@ -488,7 +496,7 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
               {folderNoteMap[null]?.map(note => (
             <li
               key={note.id}
-              className="note-label root"
+              className={`note-label root ${currentNoteId === note.id ? 'active' : ''}`}
               draggable
               onDragStart={e => {
                 e.dataTransfer.setData('type', 'note');
@@ -504,7 +512,7 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
                 setNoteContextMenu({ visible: true, x:e.clientX, y:e.clientY, noteId: note.id, folderId: null });
               }}
             >
-              📝 {note.title}
+              {note.title}
             </li>
           ))}
             </ul>
@@ -534,19 +542,19 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
           <div onClick={() => {
               handleNewNote(folderContextMenu.folderId);
               setFolderContextMenu({ visible: false, x:0, y:0, folderId: null });
-            }}>➕ 새 노트</div>
+            }}>새 노트</div>
           <div onClick={() => {
               handleNewFolder(folderContextMenu.folderId);
               setFolderContextMenu({ visible: false, x:0, y:0, folderId: null });
-            }}>➕ 새 폴더</div>
+            }}>새 폴더</div>
           <div onClick={() => {
               handleRenameFolder(folderContextMenu.folderId);
               setFolderContextMenu({ visible: false, x:0, y:0, folderId: null });
-            }}>✏️ 이름 변경</div>
+            }}>이름 변경</div>
           <div onClick={() => {
               handleDeleteFolder(folderContextMenu.folderId);
               setFolderContextMenu({ visible: false, x:0, y:0, folderId: null });
-            }}>🗑️ 삭제</div>
+            }}>삭제</div>
         </div>
       )}
 
@@ -560,11 +568,11 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
           <div onClick={() => {
               handleRenameNote(noteContextMenu.noteId, noteContextMenu.folderId);
               setNoteContextMenu({ visible: false, x:0, y:0, noteId: null, folderId: null });
-            }}>✏️ 이름 변경</div>
+            }}>이름 변경</div>
           <div onClick={() => {
               handleDeleteNote(noteContextMenu.noteId);
               setNoteContextMenu({ visible: false, x:0, y:0, noteId: null, folderId: null });
-            }}>🗑️ 삭제</div>
+            }}>삭제</div>
         </div>
       )}
     </aside>

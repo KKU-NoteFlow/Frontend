@@ -1,26 +1,22 @@
-body {
-    margin: 0;
-    font-family: 'Arial', sans-serif;
-    background-color: #f6f6f6;
-  }
-  
-  .login-container {
+.login-container {
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
     padding: 20px;
+    background: var(--nf-bg);
   }
   
   .login-box {
-    background-color: white;
+    background-color: var(--nf-surface);
     padding: 40px;
-    border-radius: 12px;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+    border-radius: var(--nf-radius-lg);
+    box-shadow: var(--nf-shadow-md);
     width: 100%;
     max-width: 400px;
     min-width: 320px;
     text-align: center;
+    color: var(--nf-text);
   }
   
   .login-logo-box {
@@ -34,41 +30,37 @@ body {
     width: 90px;
   }
   
-  .login-logo-text {
-    font-size: 50px;
-    font-weight: bold;
-    color: #222;
-  }
+  .login-logo-text { font-size: 50px; font-weight: bold; color: var(--nf-text); }
   
   .login-input {
     width: 92.1%;
     padding: 10px 14px;
     margin-bottom: 14px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
+    border: 1px solid var(--nf-border);
+    border-radius: var(--nf-radius-md);
     font-size: 14px;
-    background-color: #ffffff;
-    color: #333333;
+    background-color: var(--nf-surface);
+    color: var(--nf-text);
   }
 
   .login-input::placeholder {
-    color: #333333;
+    color: var(--nf-muted);
   }
   
   .login-btn {
     width: 100%;
     padding: 10px;
-    background-color: #0066ff;
-    color: white;
+    background-color: var(--nf-primary);
+    color: #fff;
     border: none;
-    border-radius: 6px;
+    border-radius: var(--nf-radius-md);
     font-weight: bold;
     cursor: pointer;
     margin-bottom: 20px;
   }
   
   .login-btn:hover {
-    background-color: #0055dd;
+    filter: brightness(0.95);
   }
   
   .login-social-login {
@@ -83,7 +75,7 @@ body {
     height: 40px;
     border-radius: 50%;
     border: none;
-    background-color: #eee;
+    background-color: var(--nf-surface-2);
     display: flex;
     justify-content: center;
     align-items: center;
