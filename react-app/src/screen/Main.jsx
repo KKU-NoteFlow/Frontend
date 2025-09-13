@@ -144,6 +144,32 @@ export default function MainPage() {
     fetchFiles()
   }, [fetchFiles, fileUploadTimestamp])
 
+  // OCR로 새 노트 생성 시, 새로고침 없이 목록을 즉시 갱신
+  useEffect(() => {
+    const handler = () => {
+      // 기존 목록 패치 로직 재사용
+      if (!parsedFolderId) {
+        setLoadingNotes(true)
+        let url = filter === 'recent' ? '/api/v1/notes/recent' : '/api/v1/notes'
+        fetch(`${API}${url}`, { headers: { Authorization: `Bearer ${token}` }})
+          .then(res => (res.ok ? res.json() : []))
+          .then((data) => {
+            if (filter === 'favorites') setNotes(data.filter(n=>n.is_favorite))
+            else setNotes(data)
+          })
+          .finally(() => setLoadingNotes(false))
+      } else {
+        setLoadingNotes(true)
+        fetch(`${API}/api/v1/notes`, { headers: { Authorization: `Bearer ${token}` }})
+          .then(res => (res.ok ? res.json() : []))
+          .then((data) => setNotes(data.filter(n => n.folder_id === parsedFolderId)))
+          .finally(() => setLoadingNotes(false))
+      }
+    }
+    window.addEventListener('nf:notes-refresh', handler)
+    return () => window.removeEventListener('nf:notes-refresh', handler)
+  }, [API, token, parsedFolderId, filter])
+
   // ────────────────────────────────────────────────────────────────
   // 4) 드래그 앤 드롭: 파일 드롭 이벤트 처리 + 시각 피드백
   // ────────────────────────────────────────────────────────────────
@@ -213,6 +239,36 @@ export default function MainPage() {
   const weekRate = notes.length ? Math.min(100, Math.round((weeklyNotes.length / notes.length) * 100)) : 0
   const recentNotes = [...notes].sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).slice(0,6)
 
+  // 대시보드용 지표
+  const dayNames = ['일','월','화','수','목','금','토']
+  const dayCounts = (() => {
+    const arr = new Array(7).fill(0)
+    notes.forEach(n => { const d = new Date(n.created_at).getDay(); if (!isNaN(d)) arr[d]++ })
+    return arr
+  })()
+  const dayMax = Math.max(1, ...dayCounts)
+  const last30 = (() => {
+    const days = []
+    for (let i=29;i>=0;i--) {
+      const d = new Date(now - i*24*60*60*1000)
+      const ymd = d.toISOString().slice(0,10)
+      const c = notes.filter(n => new Date(n.created_at).toISOString().slice(0,10) === ymd).length
+      days.push({ ymd, count: c })
+    }
+    return days
+  })()
+  const last30Max = Math.max(1, ...last30.map(x => x.count))
+  const folderTop5 = (() => {
+    const map = new Map()
+    notes.forEach(n => {
+      const key = n.folder_id ?? '루트'
+      map.set(key, (map.get(key)||0)+1)
+    })
+    const arr = Array.from(map.entries()).map(([k,v]) => ({ key: k, count: v }))
+    arr.sort((a,b)=>b.count-a.count)
+    return arr.slice(0,5)
+  })()
+
   const toggleFavoriteQuick = async (note) => {
     try {
       const res = await fetch(`${API}/api/v1/notes/${note.id}/favorite`, {
@@ -229,20 +285,13 @@ export default function MainPage() {
 
   return (
     <main className="main-content nf-container" style={{ paddingTop: 'var(--nf-space-4)' }}>
-      {/* 퀵 액션 리본: 기존 기능 그대로 트리거(이벤트) */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-        <button className="nf-btn nf-btn--primary" onClick={() => navigate('/notes/new')}>새 노트</button>
-        <button className="nf-btn" onClick={() => window.dispatchEvent(new Event('nf:upload'))}>업로드</button>
-        <button className="nf-btn" onClick={() => window.dispatchEvent(new Event('nf:ocr'))}>텍스트 변환</button>
-        <button className="nf-btn" onClick={() => window.dispatchEvent(new Event('nf:record'))}>녹음</button>
-        <button className="nf-btn" onClick={() => window.dispatchEvent(new Event('nf:summarize'))}>요약</button>
-      </div>
+      {/* 퀵 액션 리본 제거: 상단 ActionToolbar로 대체 */}
       {/* ──────────────────────────────────────────────────────────────── */}
       {/* 5-1) parsedFolderId가 null → 전체/최근/즐겨찾기 노트만 표시 */}
       {/* ──────────────────────────────────────────────────────────────── */}
       {parsedFolderId === null && (
         <>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16, marginBottom: 16 }}>
+        <div className="dashboard-grid" style={{ marginBottom: 16 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
             {/* Donut: 이번 주 비중 */}
             <Card>
@@ -264,84 +313,61 @@ export default function MainPage() {
               </div>
             </Card>
 
-            {/* 즐겨찾기 비율 바 차트 */}
+            {/* 최근 30일 생성 추이 */}
             <Card>
-              <h3 style={{ marginTop: 0 }}>즐겨찾기 비율</h3>
-              {(() => {
-                const fav = notes.filter(n => n.is_favorite).length
-                const total = Math.max(1, notes.length)
-                const favPct = Math.round((fav/total)*100)
-                return (
-                  <div>
-                    <div className="nf-progress" aria-label="즐겨찾기 비율"><div className="nf-progress__bar" style={{ width: `${favPct}%` }} /></div>
-                    <div style={{ marginTop: 6, color: 'var(--nf-muted)', fontSize: '0.9rem' }}>{fav} / {total}</div>
-                  </div>
-                )
-              })()}
+              <h3 style={{ marginTop: 0 }}>최근 30일 생성 추이</h3>
+              <div style={{ display:'grid', gridTemplateColumns: 'repeat(30, 1fr)', gap: 2, alignItems: 'end', height: 80 }}>
+                {last30.map((d,idx)=> (
+                  <div key={idx} title={`${d.ymd}: ${d.count}`}
+                    style={{ height: `${(d.count/last30Max)*80 || 2}px`, background: 'linear-gradient(180deg, var(--nf-primary), rgba(0,146,63,0.3))', borderRadius: 3 }} />
+                ))}
+              </div>
             </Card>
 
-            {/* 미니 막대: 요일별 생성 요약 */}
-            <Card>
-              <h3 style={{ marginTop: 0 }}>요일 요약</h3>
-              {(() => {
-                const counts = new Array(7).fill(0)
-                weeklyNotes.forEach(n => { const d = new Date(n.created_at).getDay(); if (!isNaN(d)) counts[d]++ })
-                const max = Math.max(1, ...counts)
-                return (
-                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 48 }}>
-                    {counts.map((c,i) => (
-                      <div key={i} title={String(c)} style={{ width: 10, height: `${(c/max)*48}px`, background: 'var(--nf-primary)', borderRadius: 3 }} />
-                    ))}
-                  </div>
-                )
-              })()}
-            </Card>
+            {/* 제거: 요일 요약 */}
           </div>
           {/* 요일별 그래프 */}
           <div>
             <h3 style={{ margin: '0 0 8px 0' }}>요일별 생성</h3>
-            {(() => {
-              const days = ['일','월','화','수','목','금','토']
-              const counts = new Array(7).fill(0)
-              weeklyNotes.forEach(n => { const d = new Date(n.created_at).getDay(); if (!isNaN(d)) counts[d]++ })
-              const max = Math.max(1, ...counts)
-              return (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 8, alignItems: 'end' }}>
-                  {counts.map((c,i) => (
-                    <div key={i} style={{ textAlign: 'center' }}>
-                      <div style={{ height: 60, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-                        <div style={{ width: 12, height: `${(c/max)*60}px`, background: 'var(--nf-primary)', borderRadius: 4 }} />
-                      </div>
-                      <div style={{ color: 'var(--nf-muted)', fontSize: '0.8rem' }}>{days[i]}</div>
-                    </div>
-                  ))}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 12, alignItems: 'end', padding: '8px 4px 4px 4px' }}>
+              {dayCounts.map((c,i)=> (
+                <div key={i} style={{ display:'grid', justifyItems:'center', gap:6 }}>
+                  <div style={{
+                    width: '100%', height: `${(c/dayMax)*120}px`,
+                    background: 'linear-gradient(180deg, color-mix(in oklab, var(--nf-primary) 85%, white), color-mix(in oklab, var(--nf-primary) 25%, white))',
+                    borderRadius: 10,
+                    boxShadow: 'var(--nf-shadow-sm)',
+                    border: '1px solid var(--nf-border)'
+                  }} title={`${dayNames[i]}: ${c}`} />
+                  <div style={{ color: 'var(--nf-muted)', fontSize: '0.85rem' }}>{dayNames[i]}</div>
                 </div>
-              )
-            })()}
+              ))}
+            </div>
           </div>
-          {/* 태그별 비중(데이터 없으면 안내) */}
-          <div>
-            <h3 style={{ margin: '0 0 8px 0' }}>태그별 비중</h3>
-            {Array.isArray(notes) && notes.some(n => Array.isArray(n.tags) && n.tags.length) ? (
-              (() => {
-                const map = new Map()
-                notes.forEach(n => (n.tags||[]).forEach(t => map.set(t, (map.get(t)||0)+1)))
-                const arr = Array.from(map.entries()).sort((a,b) => b[1]-a[1]).slice(0,6)
-                const total = Math.max(1, ...Array.from(map.values()).reduce((a,b)=>a+b,0))
+          {/* 폴더별 노트 수 Top 5 */}
+          <Card>
+            <h3 style={{ margin: '0 0 8px 0' }}>폴더별 노트 수 Top 5</h3>
+            <div style={{ display:'grid', gap:8 }}>
+              {folderTop5.length === 0 && <div style={{ color:'var(--nf-muted)' }}>데이터가 없습니다.</div>}
+              {folderTop5.map((f, idx) => {
+                const label = f.key === '루트' ? '루트' : `폴더 #${f.key}`
+                const pct = Math.round((f.count / Math.max(1, folderTop5[0]?.count || 1)) * 100)
                 return (
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    {arr.map(([tag,count]) => (
-                      <span key={String(tag)} className="nf-chip">{String(tag)} <span style={{ color: 'var(--nf-muted)' }}>{Math.round((count/total)*100)}%</span></span>
-                    ))}
+                  <div key={idx} style={{ display:'grid', gap:6 }}>
+                    <div style={{ display:'flex', justifyContent:'space-between', color:'var(--nf-muted)' }}>
+                      <span>{label}</span><span>{f.count}개</span>
+                    </div>
+                    <div className="nf-progress" aria-label={label}>
+                      <div className="nf-progress__bar" style={{ width: `${pct}%` }} />
+                    </div>
                   </div>
                 )
-              })()
-            ) : (
-              <p style={{ color: 'var(--nf-muted)' }}>태그 데이터가 없습니다.</p>
-            )}
-          </div>
-          {/* 시간표 */}
-          <DashboardTimetable />
+              })}
+            </div>
+          </Card>
+        </div>
+        {/* 시간표 */}
+        <DashboardTimetable />
 
           {/* 과목별 모아보기(폴더 기준) */}
           <div>
@@ -360,7 +386,6 @@ export default function MainPage() {
             )}
           </div>
           {/* 최근 노트 섹션 제거 (요청에 따라 텍스트 대신 차트 중심 구성) */}
-        </div>
         {false && (
         <section className="main-note-list" aria-live="polite">
           {loadingNotes && (

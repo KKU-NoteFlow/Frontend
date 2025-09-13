@@ -5,6 +5,7 @@ import { MdOutlineStarOutline, MdOutlineStarPurple500 } from "react-icons/md";
 import { BsChevronLeft, BsChevronRight } from "react-icons/bs";
 import { TbReload } from "react-icons/tb";
 import '../css/Topbar.css'
+import { IconStar, IconDots, IconSearch } from '../ui/icons'
 
 export default function TopBar({
   onNewNote,
@@ -130,13 +131,16 @@ export default function TopBar({
         </div>
         <button className="topbar-new" onClick={onNewNote}>+ 새 노트</button>
         <div className="search-container">
+          <div className="search-input-wrap">
+          <IconSearch className="search-icon" size={18} stroke={2} />
           <input
             className="topbar-search"
             type="text"
-            placeholder="🔍 노트 제목 검색"
+            placeholder="노트 제목 검색"
             value={query}
             onChange={e => setQuery(e.target.value)}
           />
+          </div>
           {results.length > 0 && (
             <ul className="search-results">
               {results.slice(0, 5).map(note => (
@@ -158,9 +162,19 @@ export default function TopBar({
 
       <div className="topbar-actions">
         {currentNote && (
+
+          <button
+            className="topbar-fav"
+            onClick={onToggleFavorite}
+            aria-label="즐겨찾기"
+          >
+            <IconStar size={18} stroke={currentNote.is_favorite ? 2.2 : 1.8} />
+          </button>
+
           <div className="icon-btn-star" onClick={onToggleFavorite} title="즐겨찾기">
             {currentNote.is_favorite ? <MdOutlineStarOutline /> : <MdOutlineStarPurple500 />}
           </div>
+
         )}
         <button
           ref={btnRef}
@@ -168,7 +182,7 @@ export default function TopBar({
           onClick={() => setShowSettings(prev => !prev)}
           aria-label="설정"
         >
-          ⋯
+          <IconDots size={18} />
         </button>
 
         {showSettings && (
