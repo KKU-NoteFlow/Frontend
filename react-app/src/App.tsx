@@ -1,18 +1,24 @@
 // src/App.tsx
 
 import React from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom' // 👈 useParams 추가
 
 import LoginPage       from './screen/Login'
 import SignupPage      from './screen/Signup'
 import MainPage        from './screen/Main'
 import Layout          from './components/Layout'
 import NewNotePage     from './screen/NewNotePage'
-import NoteDetail      from './screen/NoteDetail'
+import NoteDetail      from './screen/NoteDetail' // 👈 NoteDetail 컴포넌트
 import NaverCallback   from './screen/NaverCallback'
 import KakaoCallback   from './screen/KakaoCallback'
 
 import './App.css'
+
+// 1. NoteDetail 컴포넌트에 key를 전달하기 위한 Wrapper 컴포넌트 생성
+const NoteDetailWithKey = () => {
+  const { id } = useParams();
+  return <NoteDetail key={id} />;
+};
 
 const App: React.FC = () => (
   <BrowserRouter>
@@ -31,8 +37,10 @@ const App: React.FC = () => (
         <Route path="/main/:folderId"   element={<MainPage />} />
         {/* 새 노트 생성 */}
         <Route path="/notes/new"        element={<NewNotePage />} />
-        {/* 노트 상세 보기 */}
-        <Route path="/notes/:id"        element={<NoteDetail />} />
+        
+        {/* 2. 기존 NoteDetail 라우트를 새로 만든 Wrapper로 교체 */}
+        <Route path="/notes/:id"        element={<NoteDetailWithKey />} /> 
+
       </Route>
 
       {/* --- 그 외 모든 경로는 로그인으로 리다이렉트 --- */}

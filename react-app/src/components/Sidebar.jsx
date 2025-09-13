@@ -3,6 +3,7 @@
 import { FaFolderPlus, FaStickyNote } from 'react-icons/fa';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { useNavigate, Link, useParams } from 'react-router-dom';
 import '../css/Sidebar.css';
 
 export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }) {

@@ -1,6 +1,9 @@
 // src/components/Topbar.jsx
 import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { MdOutlineStarOutline, MdOutlineStarPurple500 } from "react-icons/md";
+import { BsChevronLeft, BsChevronRight } from "react-icons/bs";
+import { TbReload } from "react-icons/tb";
 import '../css/Topbar.css'
 import { IconStar, IconDots, IconSearch } from '../ui/icons'
 
@@ -68,6 +71,10 @@ export default function TopBar({
       const clickedInsideBtn = btn && btn.contains(target)
       const clickedInsideMenu = menu && menu.contains(target)
       if (!clickedInsideBtn && !clickedInsideMenu) {
+      if (
+        btnRef.current && !btnRef.current.contains(e.target) &&
+        menuRef.current && !menuRef.current.contains(e.target)
+      ) {
         setShowSettings(false)
       }
     }
@@ -98,9 +105,30 @@ export default function TopBar({
       })
   }, [query])
 
+  const handleLogout = () => {
+    localStorage.removeItem('access_token')
+    navigate('/', { replace: true })
+  }
+
+  const handleRefresh = () => {
+    // 현재 URL 그대로 새로고침
+    window.location.reload()
+    // 혹은 SPA 내에서 강제 리로드가 아니라 "다시 네비게이트"를 원하시면:
+    // navigate(location.pathname + location.search, { replace: true })
+  }
+
   return (
     <header className="topbar">
       <div className="topbar-left">
+        <div className="icon-btn" onClick={handleRefresh} title='새로고침'>
+          <TbReload />
+        </div>
+        <div className="icon-btn" onClick={() => navigate(-1)} title="뒤로가기">
+          <BsChevronLeft />
+        </div>
+        <div className="icon-btn" onClick={() => navigate(1)} title="앞으로가기">
+          <BsChevronRight />
+        </div>
         <button className="topbar-new" onClick={onNewNote}>+ 새 노트</button>
         <div className="search-container">
           <div className="search-input-wrap">
@@ -134,6 +162,7 @@ export default function TopBar({
 
       <div className="topbar-actions">
         {currentNote && (
+
           <button
             className="topbar-fav"
             onClick={onToggleFavorite}
@@ -141,6 +170,11 @@ export default function TopBar({
           >
             <IconStar size={18} stroke={currentNote.is_favorite ? 2.2 : 1.8} />
           </button>
+
+          <div className="icon-btn-star" onClick={onToggleFavorite} title="즐겨찾기">
+            {currentNote.is_favorite ? <MdOutlineStarOutline /> : <MdOutlineStarPurple500 />}
+          </div>
+
         )}
         <button
           ref={btnRef}
@@ -170,6 +204,18 @@ export default function TopBar({
                   <option value="light">라이트</option>
                   <option value="dark">다크</option>
                 </select>
+            <input
+              className="settings-search"
+              type="text"
+              placeholder="작업 검색..."
+            />
+            <div className="settings-item">링크 복사</div>
+            <div className="settings-item disabled">옮기기</div>
+            <div className="settings-item toggle">
+              작은 텍스트
+              <label className="switch">
+                <input type="checkbox" />
+                <span className="slider" />
               </label>
               <label>Primary <input className="nf-input" type="color" value={theme.primary || '#00923F'} onChange={(e) => setTheme(t => ({ ...t, primary: e.target.value }))} /></label>
               <label>배경(bg) <input className="nf-input" type="color" value={theme.bg || '#f3f7f4'} onChange={(e) => setTheme(t => ({ ...t, bg: e.target.value }))} /></label>
@@ -208,6 +254,9 @@ export default function TopBar({
                   syncPickersWithComputed()
                 }}>초기화</button>
               </div>
+            </div>
+            <div className="settings-item" onClick={handleLogout}>
+              로그아웃
             </div>
           </div>
         )}
