@@ -3,8 +3,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 0.75rem 1.2rem;
-  border-top: 1px solid #e0e0e0;
-  background: #f9f9f9;
+  border-top: 1px solid var(--nf-border);
+  background: var(--nf-surface);
   font-size: 0.9rem;
   height: 50px;
   position: sticky;
@@ -12,20 +12,16 @@
   z-index: 10;
 }
 
-.bottom-status {
-  color: #555;
-}
+.bottom-status { color: var(--nf-muted); }
 
 .bottom-actions button {
   margin-left: 0.8rem;
   padding: 6px 12px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  background: white;
+  border-radius: var(--nf-radius-sm);
+  border: 1px solid var(--nf-border);
+  background: var(--nf-surface);
   cursor: pointer;
   font-size: 0.9rem;
 }
 
-.bottom-actions button:hover {
-  background: #f0f0f0;
-}
+.bottom-actions button:hover { background: var(--nf-surface-2); }

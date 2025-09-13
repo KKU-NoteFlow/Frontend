@@ -1,0 +1,25 @@
+/* 무엇을/왜: 플로팅 액션 도크 스타일. 시인성, 접근성, 다크 대응. */
+.action-dock {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 1200;
+}
+
+.action-dock__btn {
+  border-radius: 9999px;
+  padding: 10px 14px;
+  box-shadow: var(--nf-shadow-lg);
+  background: var(--nf-surface);
+}
+.action-dock__btn:hover { background: var(--nf-surface-2); }
+.action-dock__label { font-weight: 600; }
+
+@media (max-width: 640px) {
+  .action-dock { left: 0; right: 0; bottom: 8px; flex-direction: row; justify-content: center; }
+  .action-dock__btn { border-radius: var(--nf-radius-md); }
+}
+

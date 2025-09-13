@@ -3,6 +3,9 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate, useOutletContext } from 'react-router-dom'
 import MarkdownEditor from '../components/MarkdownEditor'
 import axios from 'axios'
+import { Button, Skeleton, Tabs, Chip, Badge, Card } from '../ui'
+import '../css/Editor.css'
+import { useSearchParams } from 'react-router-dom'
 import '../css/NoteDetail.css'
 
 export default function NoteDetail() {
@@ -120,6 +123,128 @@ export default function NoteDetail() {
     }
   }, [handleSummarize, setOnSummarizeClick]);
 
+  // ────────────────────────────────────────────────────────────────
+  // 6) 툴바/Paste 이미지 업로드 훅 유지
+  // ────────────────────────────────────────────────────────────────
+  const onImageUploadHook = async (blob, callback) => {
+    const file = new File([blob], blob.name || `image-${Date.now()}.png`, { type: blob.type })
+    await uploadAndInsertImage(file)
+    // 마크다운 모드 일 때도 삽입할 수 있게 콜백 호출
+    callback(URL.createObjectURL(blob), file.name)
+    return false
+  }
+
+  const [searchParams, setSearchParams] = useSearchParams()
+  const defaultTab = searchParams.get('panel') || 'summary'
+  const [panelTab, setPanelTab] = useState(defaultTab)
+
+  useEffect(() => { setPanelTab(searchParams.get('panel') || 'summary') }, [searchParams])
+
+  if (!note) {
+    return (
+      <div className="nf-container" style={{ paddingTop: 'var(--nf-space-4)' }}>
+        <Skeleton height={28} style={{ width: 240, marginBottom: 12 }} />
+        <Skeleton height={48} />
+      </div>
+    )
+  }
+
+  return (
+    <div className="main-container">
+      <main className="main-content nf-container" style={{ paddingTop: 'var(--nf-space-4)' }}>
+        {/* 헤더 */}
+        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', alignItems: 'center' }}>
+          <h1 style={{ flex: 1, margin: 0, fontSize: 'var(--nf-font-2xl)', color: 'var(--nf-text)' }}>{note.title}</h1>
+          <Button onClick={handleSave} disabled={saving} variant="primary">
+            {saving ? '저장중…' : '💾 저장'}
+          </Button>
+        </div>
+
+        <div className="editor-layout">
+          {/* 좌측 본문: 드래그&드롭 컨테이너 */}
+          <div
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+            style={{
+              border: '1px dashed var(--nf-border)',
+              borderRadius: 'var(--nf-radius-md)',
+              overflow: 'hidden'
+            }}
+          >
+            <Editor
+              ref={editorRef}
+              initialValue={note.content ?? ''}
+              height="100vh"
+              initialEditType="wysiwyg"
+              hideModeSwitch={true}
+              toolbarItems={[]}
+              useCommandShortcut={true}
+              hooks={{ addImageBlobHook: onImageUploadHook }}
+            />
+          </div>
+
+          {/* 우측 패널: 요약/키포인트/문제 프리뷰 */}
+          <aside className="editor-aside">
+            <Card className="editor-panel">
+              <Tabs
+                tabs={[{ id: 'summary', label: '요약' }, { id: 'key', label: '키포인트' }, { id: 'quiz', label: '문제' }]}
+                value={panelTab}
+                onChange={(id) => {
+                  setPanelTab(id)
+                  const next = new URLSearchParams(searchParams)
+                  next.set('panel', id)
+                  setSearchParams(next, { replace: true })
+                }}
+              />
+              <div style={{ display: 'grid', gap: 12 }}>
+                {/* 요약 섹션 */}
+                {panelTab === 'summary' && (<div>
+                  <h4 style={{ margin: '8px 0' }}>요약</h4>
+                  <div style={{ color: 'var(--nf-text)' }}>
+                    {(note.summary && String(note.summary).trim()) ? (
+                      <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{String(note.summary)}</pre>
+                    ) : (
+                      <p className="editor-meta">요약이 없습니다. 하단 작업에서 요약을 실행해 보세요.</p>
+                    )}
+                  </div>
+                </div>)}
+                {/* 키포인트 */}
+                {panelTab === 'key' && (<div>
+                  <h4 style={{ margin: '8px 0' }}>키포인트</h4>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    {Array.isArray(note.key_points) && note.key_points.length > 0 ? (
+                      note.key_points.map((k, i) => <Chip key={i}>{k}</Chip>)
+                    ) : (
+                      <span className="editor-meta">표시할 키포인트가 없습니다.</span>
+                    )}
+                  </div>
+                </div>)}
+                {/* 문제 프리뷰 */}
+                {panelTab === 'quiz' && (<div>
+                  <h4 style={{ margin: '8px 0' }}>연관 문제</h4>
+                  <div style={{ display: 'grid', gap: 8 }}>
+                    {Array.isArray(note.quizzes) && note.quizzes.length > 0 ? (
+                      note.quizzes.slice(0, 5).map((q, i) => (
+                        <div key={i} style={{ border: '1px solid var(--nf-border)', borderRadius: 8, padding: 8 }}>
+                          <div style={{ fontWeight: 600, marginBottom: 4 }}>{q.question || `문제 ${i + 1}`}</div>
+                          {Array.isArray(q.options) && q.options.length > 0 && (
+                            <ul style={{ margin: 0, paddingLeft: 16 }}>
+                              {q.options.slice(0,4).map((o, oi) => <li key={oi}>{o}</li>)}
+                            </ul>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <p className="editor-meta">생성된 문제가 없습니다.</p>
+                    )}
+                  </div>
+                </div>)}
+              </div>
+            </Card>
+          </aside>
+        </div>
+      </main>
+    </div>
   if (!note) return <div>노트 로드 중…</div>;
 
   return (

@@ -1,12 +1,17 @@
+/*
+  변경 요약: 전역 스타일을 디자인 토큰 기반으로 정렬하고, 라이트/다크 대응.
+  목적: 전 화면 일관성/접근성 기반 마련. 기능/라우팅/시그니처 불변.
+*/
+
+/* 디자인 토큰 연결 */
+@import './css/tokens.css';
+@import './css/ui.css';
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
   color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -15,12 +20,10 @@
 
 a {
   font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
+  color: var(--nf-primary);
+  text-decoration: none;
 }
-a:hover {
-  color: #535bf2;
-}
+a:hover { text-decoration: underline; }
 
 html, body, #root {
   height: 100%;
@@ -30,14 +33,14 @@ html, body, #root {
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  background: var(--nf-bg);
+  color: var(--nf-text);
 }
 
 h1 {
-  font-size: 3.2em;
+  font-size: var(--nf-font-2xl);
   line-height: 1.1;
 }
 
@@ -48,27 +51,14 @@ button {
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
+  background-color: var(--nf-surface);
+  color: var(--nf-text);
   cursor: pointer;
   transition: border-color 0.25s;
 }
 button:hover {
-  border-color: #646cff;
+  border-color: var(--nf-primary);
 }
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
+/* 포커스 스타일은 tokens.css의 :focus-visible 규칙 사용 */
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
-}
+/* 다크 모드 전역 반영은 .dark 토큰으로 제어합니다. */

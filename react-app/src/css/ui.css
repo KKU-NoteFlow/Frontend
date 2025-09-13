@@ -1,0 +1,60 @@
+/*
+  변경 요약: 공통 UI 컴포넌트(버튼/입력/카드 등) 기본 스타일.
+  목적: 프레젠테이션 교체를 위한 얇은 레이어 제공. 접근성/포커스/토큰 일관성.
+*/
+
+.nf-container {
+  max-width: 1200px;
+  margin-inline: auto;
+  padding: var(--nf-space-4);
+}
+
+.nf-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid var(--nf-border);
+  background: var(--nf-surface);
+  color: var(--nf-text);
+  border-radius: var(--nf-radius-md);
+  padding: 0.5rem 0.9rem;
+  font-size: var(--nf-font-sm);
+  box-shadow: var(--nf-shadow-sm);
+}
+.nf-btn:hover { border-color: color-mix(in oklab, var(--nf-primary) 50%, var(--nf-border)); }
+.nf-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.nf-btn--primary { background: var(--nf-primary); color: #fff; border-color: transparent; }
+.nf-btn--ghost { background: transparent; }
+.nf-btn--sm { padding: 0.35rem 0.6rem; font-size: var(--nf-font-xs); }
+.nf-btn--lg { padding: 0.7rem 1.1rem; font-size: var(--nf-font-base); }
+
+.nf-icon-btn { width: 32px; height: 32px; padding: 0; }
+
+.nf-input, .nf-textarea, .nf-select {
+  width: 100%;
+  border: 1px solid var(--nf-border);
+  background: var(--nf-surface);
+  color: var(--nf-text);
+  border-radius: var(--nf-radius-md);
+  padding: 0.5rem 0.75rem;
+  font-size: var(--nf-font-sm);
+}
+.nf-textarea { min-height: 120px; resize: vertical; }
+
+.nf-card { /* from tokens; extend spacing */
+  padding: var(--nf-space-4);
+}
+
+.nf-badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 9999px; font-size: var(--nf-font-xs); background: var(--nf-surface-2); border: 1px solid var(--nf-border); }
+.nf-chip { display: inline-flex; gap: 0.35rem; align-items: center; padding: 0.25rem 0.5rem; border-radius: var(--nf-radius-lg); border: 1px solid var(--nf-border); background: var(--nf-surface-2); }
+
+.nf-progress { height: 8px; background: var(--nf-surface-2); border-radius: 9999px; overflow: hidden; border: 1px solid var(--nf-border); }
+.nf-progress__bar { height: 100%; background: var(--nf-primary); width: 0%; transition: width 200ms linear; }
+
+.nf-skeleton { background: linear-gradient(90deg, var(--nf-surface-2), var(--nf-border), var(--nf-surface-2)); background-size: 200% 100%; animation: nf-skel 1.2s infinite; border-radius: var(--nf-radius-md); }
+@keyframes nf-skel { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+.skip-link { position: absolute; left: -9999px; top: auto; width: 1px; height: 1px; overflow: hidden; }
+.skip-link:focus { left: 8px; top: 8px; width: auto; height: auto; padding: 8px 12px; background: var(--nf-primary); color: #fff; border-radius: var(--nf-radius-sm); z-index: 1000; }
+

@@ -7,6 +7,20 @@
     <title>NoteFlow</title>
   </head>
   <body>
+    <script>
+      (function() {
+        try {
+          var mode = localStorage.getItem('nf-theme-mode');
+          if (mode === 'dark') {
+            document.documentElement.classList.add('dark');
+            document.body && document.body.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+            document.body && document.body.classList.remove('dark');
+          }
+        } catch(e) {}
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

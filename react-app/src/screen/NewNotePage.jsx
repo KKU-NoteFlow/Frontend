@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import '../css/NewNote.css'
+import { Button } from '../ui'
 
 export default function NewNotePage() {
   const navigate = useNavigate()
@@ -32,26 +33,26 @@ export default function NewNotePage() {
   }
 
   return (
-    <div className="newnote-container">
-      <form className="newnote-form" onSubmit={handleSave}>
+    <div className="newnote-container" style={{ background: 'var(--nf-bg)' }}>
+      <form className="newnote-form nf-card" onSubmit={handleSave}>
         <input
           type="text"
           placeholder="제목"
           value={title}
           onChange={e => setTitle(e.target.value)}
-          className="newnote-title"
+          className="newnote-title nf-input"
         />
         <textarea
           placeholder="내용을 입력하세요"
           value={content}
           onChange={e => setContent(e.target.value)}
-          className="newnote-content"
+          className="newnote-content nf-textarea"
         />
         <div className="newnote-actions">
-          <button type="submit" className="newnote-save-btn">저장</button>
+          <Button type="submit" variant="primary">저장</Button>
           <button
             type="button"
-            className="newnote-cancel-btn"
+            className="nf-btn"
             onClick={() => navigate('/main')}
           >
             취소
