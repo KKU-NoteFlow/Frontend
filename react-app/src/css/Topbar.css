@@ -15,7 +15,7 @@
   gap: 1rem;
   flex: 1;
 }
-
+/* 앞으로 뒤로 가기 버튼 스타일 */
 .topbar-new {
   padding: 0.5rem 1rem;
   background: var(--nf-primary);
@@ -23,6 +23,20 @@
   border: none;
   border-radius: var(--nf-radius-md);
   cursor: pointer;
+}
+
+.topbar-nav {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  padding: 0 0.5rem;
+  cursor: pointer;
+  color: #333;
+  transition: color 0.2s;
+}
+
+.topbar-nav:hover {
+  color: #007aff;
 }
 
 .topbar-search {
