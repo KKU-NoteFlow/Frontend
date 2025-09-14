@@ -334,7 +334,7 @@ export default function MainPage() {
                 <div key={i} style={{ display:'grid', justifyItems:'center', gap:6 }}>
                   <div style={{
                     width: '100%', height: `${(c/dayMax)*120}px`,
-                    background: 'linear-gradient(180deg, color-mix(in oklab, var(--nf-primary) 85%, white), color-mix(in oklab, var(--nf-primary) 25%, white))',
+                    background: 'linear-gradient(180deg, color-mix(in oklab, var(--nf-primary) 85%, var(--nf-surface)), color-mix(in oklab, var(--nf-primary) 25%, var(--nf-surface)))',
                     borderRadius: 10,
                     boxShadow: 'var(--nf-shadow-sm)',
                     border: '1px solid var(--nf-border)'

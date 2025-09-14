@@ -355,7 +355,7 @@ const handleRecord = async () => {
         bodyHtml += `<h3>병합 텍스트</h3><pre class="modal-pre">${text.replace(/[&<>]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[s]))}</pre>`
       }
       if (warnings.length) {
-        bodyHtml += `<div style="background:#fff7e6;border:1px solid #f5d39c;border-radius:8px;padding:8px;margin-top:8px;color:#8a6d3b"><b>경고</b><ul style="margin:4px 0 0 18px">${warnings.map(w=>`<li>${w.replace(/[&<>]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[s]))}</li>`).join('')}</ul></div>`
+        bodyHtml += `<div style="background: color-mix(in oklab, var(--nf-warning) 12%, var(--nf-surface)); border:1px solid color-mix(in oklab, var(--nf-warning) 45%, var(--nf-border)); border-radius:8px; padding:8px; margin-top:8px; color: var(--nf-text)"><b>경고</b><ul style="margin:4px 0 0 18px">${warnings.map(w=>`<li>${w.replace(/[&<>]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[s]))}</li>`).join('')}</ul></div>`
       }
       setModalTitle(`${baseName} OCR 결과`)
       setModalBody(bodyHtml)

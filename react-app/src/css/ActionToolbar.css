@@ -5,9 +5,9 @@
   display: flex;
   gap: 10px;
   padding: 10px 12px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.86));
+  background: var(--nf-topbar);
   backdrop-filter: blur(6px);
-  border-bottom: 1px solid var(--nf-border);
+  border-bottom: 1px solid color-mix(in oklab, var(--nf-primary) 28%, var(--nf-border));
 }
 
 .dark .action-toolbar {
@@ -40,4 +40,3 @@
   .action-toolbar { position: sticky; top: 0; overflow-x: auto; }
   .atb-label { display: none; }
 }
-

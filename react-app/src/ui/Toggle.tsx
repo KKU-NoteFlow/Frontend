@@ -35,7 +35,7 @@ const Toggle: React.FC<ToggleProps> = ({ checked, onChange, id, label, disabled 
             style={{
               position: 'absolute', top: 2, left: checked ? 18 : 2,
               width: 16, height: 16, borderRadius: 9999,
-              background: 'white', boxShadow: 'var(--nf-shadow-sm)', transition: 'left 150ms'
+              background: 'var(--nf-surface)', boxShadow: 'var(--nf-shadow-sm)', transition: 'left 150ms'
             }}
           />
         </span>
@@ -45,4 +45,3 @@ const Toggle: React.FC<ToggleProps> = ({ checked, onChange, id, label, disabled 
 }
 
 export default Toggle
-
