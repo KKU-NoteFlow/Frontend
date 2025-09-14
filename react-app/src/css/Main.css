@@ -37,7 +37,7 @@
   background: none;
   border: none;
   font-size: 15px;
-  color: black;
+  color: var(--nf-text);
   font-weight: 800;
   text-align: left;
   padding: 8px 12px;
@@ -86,31 +86,21 @@ margin-bottom: 8px;
 font-weight: bold;
 }
 
-.note-detail-meta {
-font-size: 14px;
-color: #888;
-margin-bottom: 16px;
-}
+.note-detail-meta { font-size: 14px; color: var(--nf-muted); margin-bottom: 16px; }
 
 .note-detail-content {
 line-height: 1.6;
 }
 
 /* disable 된 검색 input 스타일 */
-.main-search:disabled {
-background: #f5f5f5;
-cursor: default;
-}
+.main-search:disabled { background: var(--nf-surface-2); cursor: default; }
 
 /* 마크다운 관련 css */
 .markdown-body h1 { font-size: 2em; margin: 0.67em 0; }
 .markdown-body h2 { font-size: 1.5em; margin: 0.75em 0; }
 .markdown-body h3 { font-size: 1.25em; margin: 0.83em 0; }
 .markdown-body p  { margin: 1em 0; line-height: 1.6; }
-.markdown-body blockquote {
-margin: 1em 0; padding-left: 1em;
-border-left: 4px solid #ddd; color: #666;
-}
+.markdown-body blockquote { margin: 1em 0; padding-left: 1em; border-left: 4px solid var(--nf-border); color: var(--nf-muted); }
 .markdown-body ul,
 .markdown-body ol {
 margin: 1em 0 1em 2em;
@@ -132,10 +122,7 @@ border-collapse: collapse;
 margin: 1em 0;
 }
 .markdown-body th,
-.markdown-body td {
-border: 1px solid #ddd;
-padding: 0.5em 1em;
-}
+.markdown-body td { border: 1px solid var(--nf-border); padding: 0.5em 1em; }
 
 /* src/css/Main.css */
 
@@ -152,11 +139,7 @@ padding: 0.5em 1em;
 /* ─────────────────────────────────────────────────────────────────
    드래그 오버 시 강조 스타일 (파일 업로드 영역)
    ───────────────────────────────────────────────────────────────── */
-   .main-file-list.drag-over {
-    background-color: #f0f8ff; /* 연한 하늘색 배경 */
-    border: 2px dashed #007aff; /* 파란색 점선 테두리 */
-    border-radius: 6px;
-  }
+   .main-file-list.drag-over { background-color: var(--nf-surface-2); border: 2px dashed var(--nf-primary); border-radius: 6px; }
   
 /* 기존의 .main-file-list 기본 스타일은 그대로 유지 */
 

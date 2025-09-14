@@ -4,9 +4,11 @@
   align-items: center;
   gap: 1rem;
   padding: 0.8rem 1.2rem;
-  border-bottom: 1px solid var(--nf-border);
-  background: var(--nf-surface);
-  position: relative;
+  border-bottom: 1px solid color-mix(in oklab, var(--nf-primary) 28%, var(--nf-border));
+  background: var(--nf-topbar);
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 .topbar-left {
@@ -70,14 +72,16 @@
 .topbar-settings:hover { background: var(--nf-surface-2); }
 
 .settings-menu {
-  position: absolute;
-  top: 3.2rem; right: 1.2rem; width: 220px;
+  position: fixed;
+  top: calc(var(--nf-topbar-h) + 8px);
+  right: 16px;
+  width: 240px;
   background: var(--nf-surface);
   border: 1px solid var(--nf-border);
   border-radius: var(--nf-radius-md);
   box-shadow: var(--nf-shadow-lg);
   padding: 0.5rem 0;
-  z-index: 1000;
+  z-index: 2000; /* 고정 헤더/오버레이보다 위 */
 }
 
 .settings-search {
@@ -123,7 +127,7 @@
   position: absolute;
   cursor: pointer;
   top: 0; left: 0; right: 0; bottom: 0;
-  background-color: #ccc;
+  background-color: var(--nf-border);
   border-radius: 16px;
   transition: .2s;
 }
@@ -132,7 +136,7 @@
   content: "";
   height: 12px; width: 12px;
   left: 2px; bottom: 2px;
-  background-color: white;
+  background-color: var(--nf-surface);
   border-radius: 50%;
   transition: .2s;
 }
@@ -163,7 +167,7 @@ input:checked + .slider:before {
   background: var(--nf-surface);
   border: 1px solid var(--nf-border);
   border-radius: var(--nf-radius-md);
-  z-index: 1000;
+  z-index: 1500;
   box-shadow: var(--nf-shadow-lg);
   max-height: 220px;
   overflow-y: auto;

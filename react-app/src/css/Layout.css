@@ -8,7 +8,7 @@
 .sidebar {
   width: 240px;
   min-width: 220px;
-  background-color: var(--nf-surface);
+  background-color: var(--nf-sidebar);
   border-right: 1px solid var(--nf-border);
   box-shadow: inset -1px 0 0 var(--nf-border);
   overflow-y: auto;
@@ -23,12 +23,12 @@
 }
 
 .topbar {
-  height: 56px;
+  height: var(--nf-topbar-h);
   flex-shrink: 0;
-  border-bottom: 1px solid var(--nf-border);
-  background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,255,255,0.9));
+  border-bottom: 1px solid color-mix(in oklab, var(--nf-primary) 40%, var(--nf-border));
+  background: var(--nf-topbar);
   backdrop-filter: blur(6px);
-  box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+  box-shadow: 0 8px 22px rgba(0,0,0,0.14);
   display: flex;
   align-items: center;
   padding: 0 1rem;
@@ -39,7 +39,14 @@
   overflow-y: auto;
   padding: var(--nf-space-5);
   padding-bottom: 60px;
-  background: radial-gradient(1200px 600px at 30% -10%, rgba(0,146,63,0.06), transparent), var(--nf-bg);
+  /* 테마 색상에 맞춘 은은한 그라데이션 배경 */
+  background:
+    radial-gradient(
+      1200px 600px at 30% -10%,
+      color-mix(in oklab, var(--nf-primary) 35%, transparent),
+      transparent
+    ),
+    var(--nf-bg);
 }
 
 .bottombar {

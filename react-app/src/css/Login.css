@@ -92,11 +92,7 @@
     object-fit: contain;
   }
   
-  .login-google-btn {
-    background-color: white;
-    border: 1px solid #ddd;
-    object-fit: contain;
-  }
+  .login-google-btn { background-color: var(--nf-surface); border: 1px solid var(--nf-border); object-fit: contain; }
 
   .login-kakao-icon {
     width: 35px;
@@ -113,10 +109,7 @@
     height: 38px;
   }
   
-  .login-signup-text {
-    font-size: 13px;
-    color: #555;
-  }
+  .login-signup-text { font-size: 13px; color: var(--nf-muted); }
   
   .login-signup-text a {
     color: #0066ff;

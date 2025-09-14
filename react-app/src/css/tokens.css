@@ -6,17 +6,22 @@
 /* Light mode tokens */
 :root {
   /* 색상 */
-  /* Konkuk-inspired green theme (default) */
-  --nf-bg: #eef3ec;          /* 편안한 옅은 그린 톤 */
-  --nf-surface: #ffffff;
-  --nf-surface-2: #f4f7f3;   /* surface 대비 강화 */
-  --nf-text: #0b1720;
-  --nf-primary: #377b24;     /* 핵심 포인트 컬러 */
-  --nf-muted: #64748b;
-  --nf-border: #e5e7eb;
+  /* Fresh green with darker separation */
+  --nf-bg: #c8d7cf;          /* 메인 배경: 확실히 더 짙게 */
+  --nf-surface: #f2f7f4;     /* 카드/패널 표면: 살짝 그린 */
+  --nf-surface-2: #e0eae4;   /* 서브 표면/호버 */
+  --nf-sidebar: #a6bcb1;     /* 사이드바: 또렷한 분리 */
+  --nf-topbar: #d7e3dd;      /* 탑바: 은은한 틴트 */
+  --nf-text: #0a1510;        /* 본문 텍스트 */
+  --nf-primary: #2f9e44;     /* 포인트 그린 */
+  --nf-muted: #2f3a35;       /* 보조 텍스트: 더 진하게 */
+  --nf-border: #6f8a7c;      /* 경계선: 명확하게 */
   --nf-success: #10b981;
   --nf-warning: #f59e0b;
   --nf-danger: #ef4444;
+
+  /* 레이아웃 고정 값 */
+  --nf-topbar-h: 56px;
 
   /* 타이포 스케일 */
   --nf-font-xs: 0.75rem;
@@ -43,20 +48,22 @@
   --nf-radius-xl: 16px;
 
   /* 쉐도우 */
-  --nf-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --nf-shadow-md: 0 4px 10px rgba(0, 0, 0, 0.08);
-  --nf-shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.12);
+  --nf-shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.14);
+  --nf-shadow-md: 0 8px 20px rgba(0, 0, 0, 0.16);
+  --nf-shadow-lg: 0 16px 34px rgba(0, 0, 0, 0.20);
 }
 
 /* Dark mode tokens (body 혹은 html에 .dark가 추가될 때 적용) */
 .dark {
-  --nf-bg: #0e1510;
-  --nf-surface: #121b14;
-  --nf-surface-2: #0f1812;
+  --nf-bg: #0b1410;          /* 메인 배경: 아주 짙은 그린-블랙 */
+  --nf-surface: #101914;     /* 카드 표면: 진한 그린 */
+  --nf-surface-2: #0e1712;   /* 서브 표면 */
+  --nf-sidebar: #0a120e;     /* 사이드바 전용: 더 어둡게 */
+  --nf-topbar: #152219;      /* 탑바 전용: 살짝 밝게 */
   --nf-text: #e6f4ec;
-  --nf-primary: #49a23a;     /* 다크에서 조금 더 밝은 그린 */
+  --nf-primary: #49a23a;     /* 다크 포인트 그린 */
   --nf-muted: #a1b5aa;
-  --nf-border: #20402d;
+  --nf-border: #244a37;
   --nf-success: #34d399;
   --nf-warning: #fbbf24;
   --nf-danger: #f87171;
