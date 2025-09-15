@@ -1,8 +1,11 @@
 import React from 'react'
 
-type IconProps = React.SVGProps<SVGSVGElement> & { size?: number, stroke?: number }
+type IconProps = Omit<React.SVGProps<SVGSVGElement>, 'stroke' | 'strokeWidth' | 'size'> & {
+  size?: number
+  strokeWidth?: number
+}
 
-const makeIcon = (paths: React.ReactNode) => ({ size = 20, stroke = 1.8, ...rest }: IconProps) => (
+const makeIcon = (paths: React.ReactNode) => ({ size = 20, strokeWidth: sw = 1.8, ...rest }: IconProps) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width={size}
@@ -10,7 +13,7 @@ const makeIcon = (paths: React.ReactNode) => ({ size = 20, stroke = 1.8, ...rest
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth={stroke}
+    strokeWidth={sw}
     strokeLinecap="round"
     strokeLinejoin="round"
     aria-hidden
@@ -59,4 +62,3 @@ export const IconSearch = makeIcon(<>
   <circle cx="11" cy="11" r="6"/>
   <path d="M20 20l-3.5-3.5"/>
  </>)
-
