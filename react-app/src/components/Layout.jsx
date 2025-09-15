@@ -152,6 +152,41 @@ const handleRecord = async () => {
   }
 };
 
+  // 요약 처리 (페이지 제공 핸들러가 있으면 위임, 없으면 현재 노트로 직접 처리)
+  const handleSummarize = async () => {
+    if (typeof onSummarizeClick === 'function') {
+      try {
+        await onSummarizeClick()
+      } catch (e) {
+        console.error('[Layout] delegated summarize failed:', e)
+      }
+      return
+    }
+
+    if (!currentNote) return
+    setStatusText('요약을 수행 중입니다...')
+    const API = import.meta.env.VITE_API_BASE_URL
+    const token = localStorage.getItem('access_token')
+    try {
+      const res = await fetch(`${API}/api/v1/notes/${currentNote.id}/summarize`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) {
+        alert('요약에 실패했습니다')
+        setStatusText('')
+        return
+      }
+      const updated = await res.json()
+      setCurrentNote(updated)
+      setStatusText('요약 완료')
+    } catch (err) {
+      console.error('[Layout] 요약 중 예외:', err)
+      alert('요약 처리 중 오류가 발생했습니다.')
+      setStatusText('')
+    }
+  }
+
   // 3) 즐겨찾기 토글
   const toggleFavorite = async () => {
     if (!currentNote) return
