@@ -16,7 +16,7 @@ export default function NoteDetail() {
   const { setCurrentNote, setOnSummarizeClick, setStatusText } = useOutletContext()
 
   const token = localStorage.getItem('access_token')
-  const API = import.meta.env.VITE_API_BASE_URL
+  const API = import.meta.env.VITE_API_BASE_URL ?? ''
 
   // 노트 로드
   useEffect(() => {

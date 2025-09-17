@@ -87,7 +87,7 @@ const handleRecord = async () => {
       formData.append('file', blob, 'recording.wav');
       formData.append('title', '녹음된 노트');
 
-      const API = import.meta.env.VITE_API_BASE_URL;
+      const API = import.meta.env.VITE_API_BASE_URL ?? '';
       const token = localStorage.getItem('access_token');
 
       // 현재 경로가 /notes/:id 형태인지 확인
@@ -165,7 +165,7 @@ const handleRecord = async () => {
 
     if (!currentNote) return
     setStatusText('요약을 수행 중입니다...')
-    const API = import.meta.env.VITE_API_BASE_URL
+    const API = import.meta.env.VITE_API_BASE_URL ?? ''
     const token = localStorage.getItem('access_token')
     try {
       const res = await fetch(`${API}/api/v1/notes/${currentNote.id}/summarize`, {
@@ -190,7 +190,7 @@ const handleRecord = async () => {
   // 3) 즐겨찾기 토글
   const toggleFavorite = async () => {
     if (!currentNote) return
-    const API = import.meta.env.VITE_API_BASE_URL
+    const API = import.meta.env.VITE_API_BASE_URL ?? ''
     const token = localStorage.getItem('access_token')
     try {
       const res = await fetch(
@@ -238,7 +238,7 @@ const handleRecord = async () => {
     const files = e.target.files
     if (!files || files.length === 0) return
 
-    const API = import.meta.env.VITE_API_BASE_URL
+    const API = import.meta.env.VITE_API_BASE_URL ?? ''
     const token = localStorage.getItem('access_token')
     const folderIdToUpload = uploadTargetFolderId
 
@@ -315,7 +315,7 @@ const handleRecord = async () => {
       formData.append('folder_id', String(selectedFolderId))
     }
 
-    const API = import.meta.env.VITE_API_BASE_URL
+    const API = import.meta.env.VITE_API_BASE_URL ?? ''
     const token = localStorage.getItem('access_token')
     setStatusText('OCR 진행중...')
 
@@ -453,14 +453,18 @@ const handleRecord = async () => {
           </div>
         )}
 
-        <BottomBar
-          statusText={statusText}
-          isRecording={isRecording}
-          onRecordClick={handleRecord}
-          onSummarizeClick={onSummarizeClick}
-          onUploadClick={handleUploadClick}
-          onOcrClick={handleOcrClick}
-        />
+        {/* Show bottom bar only on note detail pages (file/note view).
+            The main dashboard does not need the global bottom bar. */}
+        {local.pathname.startsWith('/notes/') && (
+          <BottomBar
+            statusText={statusText}
+            isRecording={isRecording}
+            onRecordClick={handleRecord}
+            onSummarizeClick={onSummarizeClick}
+            onUploadClick={handleUploadClick}
+            onOcrClick={handleOcrClick}
+          />
+        )}
 
         <Toast open={toast.open} message={toast.message} variant={toast.variant} onClose={() => setToast({ ...toast, open: false })} />
       </div>

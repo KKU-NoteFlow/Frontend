@@ -46,7 +46,8 @@ h1 {
 
 button {
   border-radius: 8px;
-  border: 1px solid transparent;
+  /* show a visible border using the design token so controls have clear boundaries */
+  border: 1px solid var(--nf-border);
   padding: 0.6em 1.2em;
   font-size: 1em;
   font-weight: 500;
@@ -62,3 +63,14 @@ button:hover {
 /* 포커스 스타일은 tokens.css의 :focus-visible 규칙 사용 */
 
 /* 다크 모드 전역 반영은 .dark 토큰으로 제어합니다. */
+
+/* Force visible borders for key UI elements when global rules might hide them */
+.nf-card, .nf-btn, .nf-input, .nf-select, .nf-textarea, .main-note-item {
+  border: 1px solid var(--nf-border) !important;
+}
+
+/* Ensure compact inputs/buttons still keep accessible focus outline */
+:where(.nf-btn, .nf-input, .nf-select, .nf-textarea):focus-visible {
+  outline: 2px solid var(--nf-primary);
+  outline-offset: 2px;
+}

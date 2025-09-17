@@ -39,7 +39,7 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
   // ────────────────────────────────────────────────────────────────
   const loadFolders = useCallback(async () => {
     try {
-      const API = import.meta.env.VITE_API_BASE_URL;
+      const API = import.meta.env.VITE_API_BASE_URL ?? '';
       const token = localStorage.getItem('access_token');
       const res = await fetch(`${API}/api/v1/folders`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -74,7 +74,7 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
   // ────────────────────────────────────────────────────────────────
   const loadNotes = useCallback(async () => {
     try {
-      const API = import.meta.env.VITE_API_BASE_URL;
+      const API = import.meta.env.VITE_API_BASE_URL ?? '';
       const token = localStorage.getItem('access_token');
       const res = await fetch(`${API}/api/v1/notes`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -128,7 +128,7 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
   // ────────────────────────────────────────────────────────────────
   const handleDrop = async (e, targetFolderId) => {
     e.preventDefault();
-    const API = import.meta.env.VITE_API_BASE_URL;
+    const API = import.meta.env.VITE_API_BASE_URL ?? '';
     const token = localStorage.getItem('access_token');
     const dataType = e.dataTransfer.getData('type');
     const droppedNoteId = e.dataTransfer.getData('noteId');
@@ -225,7 +225,7 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
     const name = prompt('새 폴더 이름을 입력하세요');
     if (!name) return;
     try {
-      const API = import.meta.env.VITE_API_BASE_URL;
+      const API = import.meta.env.VITE_API_BASE_URL ?? '';
       const token = localStorage.getItem('access_token');
       const res = await fetch(`${API}/api/v1/folders`, {
         method: 'POST',
@@ -250,7 +250,7 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
     const title = prompt('노트 제목을 입력하세요');
     if (!title) return;
     try {
-      const API = import.meta.env.VITE_API_BASE_URL;
+      const API = import.meta.env.VITE_API_BASE_URL ?? '';
       const token = localStorage.getItem('access_token');
       const res = await fetch(`${API}/api/v1/notes`, {
         method: 'POST',
@@ -272,7 +272,7 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
     const name = prompt('새 폴더 이름을 입력하세요');
     if (!name) return;
     try {
-      const API = import.meta.env.VITE_API_BASE_URL;
+      const API = import.meta.env.VITE_API_BASE_URL ?? '';
       const token = localStorage.getItem('access_token');
       const res = await fetch(`${API}/api/v1/folders/${folderId}`, {
         method: 'PATCH',
@@ -294,7 +294,7 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
     const title = prompt('새 노트 제목을 입력하세요');
     if (!title) return;
     try {
-      const API = import.meta.env.VITE_API_BASE_URL;
+      const API = import.meta.env.VITE_API_BASE_URL ?? '';
       const token = localStorage.getItem('access_token');
       const res = await fetch(`${API}/api/v1/notes/${noteId}`, {
         method: 'PATCH',
@@ -315,7 +315,7 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
   const handleDeleteFolder = async folderId => {
     if (!confirm('정말 폴더를 삭제하시겠습니까?')) return;
     try {
-      const API = import.meta.env.VITE_API_BASE_URL;
+      const API = import.meta.env.VITE_API_BASE_URL ?? '';
       const token = localStorage.getItem('access_token');
       const res = await fetch(`${API}/api/v1/folders/${folderId}`, {
         method: 'DELETE',
@@ -332,7 +332,7 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
   const handleDeleteNote = async noteId => {
     if (!confirm('이 노트를 삭제하시겠습니까?')) return;
     try {
-      const API = import.meta.env.VITE_API_BASE_URL;
+      const API = import.meta.env.VITE_API_BASE_URL ?? '';
       const token = localStorage.getItem('access_token');
       const res = await fetch(`${API}/api/v1/notes/${noteId}`, {
         method: 'DELETE',
@@ -378,9 +378,9 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
             e.dataTransfer.setData('type', 'folder');
           }}
           onClick={() => {
+            // Toggle open/closed only. Do not navigate or change the main
+            // view when a folder is clicked — keep showing the main dashboard.
             setOpenMap(p => ({ ...p, [node.id]: !p[node.id] }));
-            onSelectFolder?.(node.id);
-            navigate(`/main/${node.id}`);
           }}
           onContextMenu={e => {
             e.preventDefault();

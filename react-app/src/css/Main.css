@@ -136,6 +136,33 @@ margin: 1em 0;
   .dashboard-grid { grid-template-columns: 1fr; }
 }
 
+/* Desktop: fix left rows to equal heights so timetable matches their sum */
+@media (min-width: 901px) {
+  /* Desktop: explicit grid rows/columns so full-width content always
+     starts after the timetable (which is in row 1). The timetable's
+     height is still driven by JS, so we place elements into explicit
+     grid rows to avoid overlap. */
+  /* make two explicit rows: top row contains left col + timetable,
+     second row contains the full-width section below */
+  .dashboard-grid { grid-template-rows: auto auto; align-items: start; }
+
+  /* Left column (column 1, row 1) */
+  .dashboard-left-col { display: grid; grid-auto-rows: min-content; gap: 16px; grid-column: 1; grid-row: 1; }
+  .dashboard-left-col > .nf-card { height: auto; min-height: 0; display: flex; flex-direction: column; }
+
+  /* Timetable (column 2, row 1) */
+  .dashboard-timetable-wrap { grid-column: 2; grid-row: 1; align-self: stretch; }
+  /* allow timetable content to size the cell; JS may set an explicit
+     height on the wrapper, so don't force 100% here which can cause
+     unexpected stretching/overflow behaviors */
+  .dashboard-timetable { height: auto; min-height: 0; }
+
+  /* Full-width section (과목별 모아보기) is rendered outside the
+     main grid now; keep spacing so it sits clearly below the grid. */
+  /* 더 아래로 내려서 위쪽 대시보드 컨텐츠와 겹치지 않도록 여유를 늘립니다. */
+  .dashboard-grid__full { margin-top: 48px; }
+}
+
 /* ─────────────────────────────────────────────────────────────────
    드래그 오버 시 강조 스타일 (파일 업로드 영역)
    ───────────────────────────────────────────────────────────────── */

@@ -12,7 +12,8 @@ export default function LoginPage() {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(import.meta.env.VITE_API_BASE_URL + '/api/v1/login', {
+      const API = import.meta.env.VITE_API_BASE_URL ?? ''
+      const response = await fetch(API + '/api/v1/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ loginId: username, password })
@@ -108,7 +109,8 @@ export default function LoginPage() {
             <GoogleLogin
               onSuccess={async (response) => {
                 const token = response.credential;
-                const res = await fetch(import.meta.env.VITE_API_BASE_URL + '/api/v1/login/google', {
+                const API = import.meta.env.VITE_API_BASE_URL ?? ''
+                const res = await fetch(API + '/api/v1/login/google', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ token })
