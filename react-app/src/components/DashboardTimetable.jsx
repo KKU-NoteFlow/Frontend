@@ -29,7 +29,8 @@ export default function DashboardTimetable() {
 
   const hours = useMemo(() => {
     const arr = []
-    for (let h = 8; h <= 20; h++) arr.push(h)
+    // only show 09:00 - 18:00
+    for (let h = 9; h <= 18; h++) arr.push(h)
     return arr
   }, [])
 

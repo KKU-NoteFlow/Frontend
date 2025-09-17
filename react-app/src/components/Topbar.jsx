@@ -43,7 +43,8 @@ export default function TopBar({
       return
     }
 
-    fetch(`${import.meta.env.VITE_API_BASE_URL}/api/v1/notes`, {
+    const API = import.meta.env.VITE_API_BASE_URL ?? ''
+    fetch(`${API}/api/v1/notes`, {
       headers: {
         Authorization: `Bearer ${localStorage.getItem('access_token')}`
       }

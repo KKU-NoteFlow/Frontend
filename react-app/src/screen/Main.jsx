@@ -1,5 +1,5 @@
 // src/screen/Main.jsx
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate, useOutletContext, useParams } from 'react-router-dom'
 import '@toast-ui/editor/dist/toastui-editor.css';
 import '../css/Main.css'
@@ -31,7 +31,7 @@ export default function MainPage() {
   const [isDragOver, setIsDragOver] = useState(false)
 
   const token = localStorage.getItem('access_token')
-  const API = import.meta.env.VITE_API_BASE_URL
+  const API = import.meta.env.VITE_API_BASE_URL ?? ''
 
   // 폴더(과목) 목록 로드 → 과목별 카드에서 사용
   useEffect(() => {
@@ -269,6 +269,75 @@ export default function MainPage() {
     return arr.slice(0,5)
   })()
 
+  // refs for left column and timetable wrapper so we can set timetable height to match left column
+  const timetableRef = useRef(null)
+  const leftColRef = useRef(null)
+
+  useEffect(() => {
+    const wrap = () => timetableRef.current
+    const left = () => leftColRef.current || document.querySelector('.dashboard-left-col')
+    if (!wrap()) return
+
+    const setHeight = (h) => {
+      const w = wrap()
+      if (!w) return
+      if (window.innerWidth <= 900) {
+        w.style.height = 'auto'
+      } else {
+        // Compute inner timetable content height (includes absolutely
+        // positioned items). If the content spills beyond the left column
+        // height, expand the wrapper so following content is pushed below
+        // the visual bottom of the timetable.
+        try {
+          const inner = w.querySelector('.timetable-wrap')
+          let innerH = inner ? inner.getBoundingClientRect().height : 0
+
+          // Absolutely-positioned timetable items do NOT affect the
+          // parent's bounding box. Find the bottom-most descendant and
+          // include it in the computed height so the wrapper fully
+          // contains visible timetable content.
+          if (inner) {
+            const ib = inner.getBoundingClientRect()
+            let maxBottom = ib.height
+            const elems = inner.querySelectorAll('*')
+            elems.forEach(el => {
+              const cb = el.getBoundingClientRect()
+              const relBottom = cb.bottom - ib.top
+              if (relBottom > maxBottom) maxBottom = relBottom
+            })
+            innerH = Math.max(innerH, maxBottom)
+          }
+
+          const target = Math.max(h || 0, innerH || 0)
+          w.style.height = target ? `${Math.round(target)}px` : 'auto'
+        } catch (err) {
+          w.style.height = h ? `${Math.round(h)}px` : 'auto'
+        }
+      }
+    }
+
+    // use ResizeObserver to react to content/size changes of the left column
+    const ro = new (window.ResizeObserver || function(){})(entries => {
+      for (const entry of entries) {
+        setHeight(entry.contentRect.height)
+      }
+    })
+    const leftEl = left()
+    if (leftEl && ro.observe) ro.observe(leftEl)
+
+    // also adjust on window resize
+    const onResize = () => setHeight(left() ? left().getBoundingClientRect().height : 0)
+    window.addEventListener('resize', onResize)
+
+    // initial set
+    setHeight(leftEl ? leftEl.getBoundingClientRect().height : 0)
+
+    return () => {
+      if (leftEl && ro.unobserve) ro.unobserve(leftEl)
+      window.removeEventListener('resize', onResize)
+    }
+  }, [notes, folders, last30Max])
+
   const toggleFavoriteQuick = async (note) => {
     try {
       const res = await fetch(`${API}/api/v1/notes/${note.id}/favorite`, {
@@ -292,7 +361,7 @@ export default function MainPage() {
       {parsedFolderId === null && (
         <>
         <div className="dashboard-grid" style={{ marginBottom: 16 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
+          <div className="dashboard-left-col" ref={leftColRef} style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
             {/* Donut: 이번 주 비중 */}
             <Card>
               <h3 style={{ marginTop: 0 }}>이번 주 비중</h3>
@@ -325,66 +394,52 @@ export default function MainPage() {
             </Card>
 
             {/* 제거: 요일 요약 */}
+            {/* 폴더별 노트 수 Top 5 (moved into left column) */}
+            <Card>
+              <h3 style={{ margin: '0 0 8px 0' }}>폴더별 노트 수 Top 5</h3>
+              <div style={{ display:'grid', gap:8 }}>
+                {folderTop5.length === 0 && <div style={{ color:'var(--nf-muted)' }}>데이터가 없습니다.</div>}
+                {folderTop5.map((f, idx) => {
+                  const label = f.key === '루트' ? '루트' : `폴더 #${f.key}`
+                  const pct = Math.round((f.count / Math.max(1, folderTop5[0]?.count || 1)) * 100)
+                  return (
+                    <div key={idx} style={{ display:'grid', gap:6 }}>
+                      <div style={{ display:'flex', justifyContent:'space-between', color:'var(--nf-muted)' }}>
+                        <span>{label}</span><span>{f.count}개</span>
+                      </div>
+                      <div className="nf-progress" aria-label={label}>
+                        <div className="nf-progress__bar" style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </Card>
           </div>
-          {/* 요일별 그래프 */}
-          <div>
-            <h3 style={{ margin: '0 0 8px 0' }}>요일별 생성</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 12, alignItems: 'end', padding: '8px 4px 4px 4px' }}>
-              {dayCounts.map((c,i)=> (
-                <div key={i} style={{ display:'grid', justifyItems:'center', gap:6 }}>
-                  <div style={{
-                    width: '100%', height: `${(c/dayMax)*120}px`,
-                    background: 'linear-gradient(180deg, color-mix(in oklab, var(--nf-primary) 85%, var(--nf-surface)), color-mix(in oklab, var(--nf-primary) 25%, var(--nf-surface)))',
-                    borderRadius: 10,
-                    boxShadow: 'var(--nf-shadow-sm)',
-                    border: '1px solid var(--nf-border)'
-                  }} title={`${dayNames[i]}: ${c}`} />
-                  <div style={{ color: 'var(--nf-muted)', fontSize: '0.85rem' }}>{dayNames[i]}</div>
-                </div>
+          {/* 요일별 그래프 (제거) — 시간표를 오른쪽 빈 공간에 배치 */}
+          <div className="dashboard-timetable-wrap" ref={el => timetableRef.current = el} style={{ minWidth: 260 }}>
+            <DashboardTimetable className="dashboard-timetable" />
+          </div>
+        </div>
+
+        {/* 과목별 모아보기(폴더 기준) - 그리드 외부로 이동해서 항상 시간표 아래에 렌더되도록 함 */}
+        <div className="dashboard-grid__full" style={{ marginTop: 48 }}>
+          {folders.length > 0 ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <h3 style={{ margin: '24px 0 8px 0' }}>과목별 모아보기</h3>
+              </div>
+              {folders.slice(0, 9).map(f => (
+                <Card key={f.id} style={{ padding: 12, cursor: 'default' }}>
+                  <div style={{ fontWeight: 600, marginBottom: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.name}</div>
+                  <div style={{ color: 'var(--nf-muted)', fontSize: '0.9rem' }}>노트 {notes.filter(n => n.folder_id === f.id).length}개</div>
+                </Card>
               ))}
             </div>
-          </div>
-          {/* 폴더별 노트 수 Top 5 */}
-          <Card>
-            <h3 style={{ margin: '0 0 8px 0' }}>폴더별 노트 수 Top 5</h3>
-            <div style={{ display:'grid', gap:8 }}>
-              {folderTop5.length === 0 && <div style={{ color:'var(--nf-muted)' }}>데이터가 없습니다.</div>}
-              {folderTop5.map((f, idx) => {
-                const label = f.key === '루트' ? '루트' : `폴더 #${f.key}`
-                const pct = Math.round((f.count / Math.max(1, folderTop5[0]?.count || 1)) * 100)
-                return (
-                  <div key={idx} style={{ display:'grid', gap:6 }}>
-                    <div style={{ display:'flex', justifyContent:'space-between', color:'var(--nf-muted)' }}>
-                      <span>{label}</span><span>{f.count}개</span>
-                    </div>
-                    <div className="nf-progress" aria-label={label}>
-                      <div className="nf-progress__bar" style={{ width: `${pct}%` }} />
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </Card>
+          ) : (
+            <p style={{ color: 'var(--nf-muted)' }}>폴더(과목) 데이터가 없습니다.</p>
+          )}
         </div>
-        {/* 시간표 */}
-        <DashboardTimetable />
-
-          {/* 과목별 모아보기(폴더 기준) */}
-          <div>
-            <h3 style={{ margin: '0 0 8px 0' }}>과목별 모아보기</h3>
-            {folders.length > 0 ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-                {folders.slice(0, 9).map(f => (
-                  <Card key={f.id} style={{ padding: 12, cursor: 'pointer' }} onClick={() => navigate(`/main/${f.id}`)}>
-                    <div style={{ fontWeight: 600, marginBottom: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.name}</div>
-                    <div style={{ color: 'var(--nf-muted)', fontSize: '0.9rem' }}>노트 {notes.filter(n => n.folder_id === f.id).length}개</div>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <p style={{ color: 'var(--nf-muted)' }}>폴더(과목) 데이터가 없습니다.</p>
-            )}
-          </div>
           {/* 최근 노트 섹션 제거 (요청에 따라 텍스트 대신 차트 중심 구성) */}
         {false && (
         <section className="main-note-list" aria-live="polite">

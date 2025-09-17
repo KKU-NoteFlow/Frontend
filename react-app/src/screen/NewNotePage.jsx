@@ -12,7 +12,7 @@ export default function NewNotePage() {
     e.preventDefault()
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/api/v1/notes`,
+        `${import.meta.env.VITE_API_BASE_URL ?? ''}/api/v1/notes`,
         {
           method: 'POST',
           headers: {
