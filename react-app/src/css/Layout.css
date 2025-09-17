@@ -14,6 +14,12 @@
   overflow-y: auto;
 }
 
+/* When sidebar is fully hidden, remove it from layout flow so main content
+   expands to full width. The sidebar itself is positioned fixed and slides
+   out of view with transform */
+.layout-container.sidebar-hidden .sidebar { position: fixed; left: 0; top: 0; transform: translateX(-110%); }
+.layout-container.sidebar-hidden .layout-body { margin-left: 0; }
+
 .layout-body {
   display: flex;
   flex-direction: column;

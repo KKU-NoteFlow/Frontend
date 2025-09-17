@@ -23,13 +23,28 @@ export default function NoteDetail() {
     fetch(`${API}/api/v1/notes/${id}`, {
       headers: { Authorization: `Bearer ${token}` }
     })
-      .then(res => res.ok ? res.json() : Promise.reject())
+      .then(async (res) => {
+        if (res.status === 401) {
+          // unauthorized — clear token and redirect to login
+          console.warn('[NoteDetail] 401 Unauthorized when fetching note; redirecting to login')
+          try { localStorage.removeItem('access_token') } catch {}
+          navigate('/', { replace: true })
+          return Promise.reject(new Error('Unauthorized'))
+        }
+        if (!res.ok) {
+          const text = await res.text().catch(() => '')
+          return Promise.reject(new Error(text || 'Failed to fetch'))
+        }
+        return res.json()
+      })
       .then(data => {
         setNote(data)
         setCurrentNote?.(data)
         setHtml(data.contentHTML || data.content || '')
       })
-      .catch(() => {
+      .catch((err) => {
+        if (err && err.message === 'Unauthorized') return
+        console.error('[NoteDetail] 노트 불러오기 실패:', err)
         alert('노트를 불러올 수 없습니다.')
         navigate('/main')
       })
@@ -110,19 +125,24 @@ export default function NoteDetail() {
 
   return (
     <div className="note-detail">
-      <div className="note-header">
-        <h1 className="note-title">{note.title}</h1>
-        <Button onClick={handleSave} disabled={saving}>
-          {saving ? '저장중…' : '💾 저장'}
-        </Button>
-      </div>
+      <div className="note-card">
+        <div className="note-header">
+          <div>
+            <h1 className="note-title">{note.title}</h1>
+            <div className="note-meta">{new Date(note.created_at).toLocaleString()}</div>
+          </div>
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? '저장중…' : '💾 저장'}
+          </Button>
+        </div>
 
-      <div className="note-editor">
-        <MarkdownEditor
-          html={html}
-          onUpdate={newHtml => setHtml(newHtml)}
-          uploadImage={handleImageUpload}
-        />
+        <div className="note-editor">
+          <MarkdownEditor
+            html={html}
+            onUpdate={newHtml => setHtml(newHtml)}
+            uploadImage={handleImageUpload}
+          />
+        </div>
       </div>
     </div>
   )

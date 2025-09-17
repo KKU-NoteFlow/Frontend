@@ -64,15 +64,64 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: 16px;
+  /* 기본: 카드 최소 높이 확보, 내용이 많을 땐 확장 */
+  grid-auto-rows: minmax(180px, auto);
+  align-items: stretch;
 }
 @media (min-width: 640px) { .main-note-list { grid-template-columns: 1fr 1fr; } }
 @media (min-width: 1024px) { .main-note-list { grid-template-columns: 1fr 1fr 1fr; } }
 
+/* Wide screens: 고정된 카드 높이로 대시보드 카드와 시각적 무게를 맞춤 */
+@media (min-width: 1024px) {
+  .main-note-list { grid-auto-rows: 320px; }
+  .main-note-item { min-height: 0; height: 100%; }
+}
+
 .main-note-item { border-bottom: 1px solid var(--nf-border); padding-bottom: 16px; background: var(--nf-surface); }
 
-.main-note-title { font-size: 16px; font-weight: bold; text-align: left; margin: 0; color: var(--nf-text); }
+/* main note item rounding override to make list items match card style */
+.main-note-item {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--nf-border);
+  padding: 14px 14px 14px 18px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.6), transparent);
+  box-shadow: 0 6px 18px rgba(10,15,10,0.03);
+  /* Make each note card a consistent block regardless of content length */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 180px;
+  height: 100%;
+}
 
-.main-note-preview { color: var(--nf-muted); font-size: 14px; text-align: left; margin: 4px 0; }
+.main-note-item::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 8px; bottom: 8px;
+  width: 6px;
+  border-top-left-radius: 10px;
+  border-bottom-left-radius: 10px;
+  background: var(--nf-primary);
+}
+
+.main-note-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  text-align: left;
+  margin: 0 0 6px 0;
+  color: var(--nf-text);
+  font-family: 'Georgia', 'Times New Roman', serif;
+}
+
+.main-note-preview {
+  color: var(--nf-muted);
+  font-size: 0.95rem;
+  text-align: left;
+  margin: 0;
+  line-height: 1.6;
+}
 
 .main-note-date { text-align: right; font-size: 12px; color: var(--nf-muted); }
 
@@ -168,6 +217,38 @@ margin: 1em 0;
    ───────────────────────────────────────────────────────────────── */
    .main-file-list.drag-over { background-color: var(--nf-surface-2); border: 2px dashed var(--nf-primary); border-radius: 6px; }
   
+/* 파일 목록 스타일 확장 */
+.main-file-list ul { list-style: none; padding: 0; margin: 0; }
+.main-file-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--nf-border);
+  transition: background 0.15s ease, transform 0.12s ease;
+  cursor: pointer;
+}
+.main-file-item.hover, .main-file-item:hover { background: var(--nf-surface-2); transform: translateY(-1px); }
+.main-file-icon {
+  width: 56px;
+  height: 56px;
+  background: var(--nf-surface-2);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 1rem;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+.main-file-meta { display: flex; flex-direction: column; }
+.main-file-name { font-size: 1.05rem; color: var(--nf-text); font-weight: 600; }
+.main-file-date { font-size: 0.9rem; color: var(--nf-muted); margin-top: 4px; }
+
+@media (max-width: 720px) {
+  .main-file-icon { width: 48px; height: 48px; }
+  .main-file-item { padding: 10px 12px; }
+}
+
 /* 기존의 .main-file-list 기본 스타일은 그대로 유지 */
 
 /* ----------------------------------------------------------------------------
