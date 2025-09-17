@@ -16,6 +16,54 @@
   box-sizing: border-box;
 }
 
+/* Collapsed state: show a slim vertical bar; hover expands it temporarily */
+.sidebar {
+  transition: transform 220ms cubic-bezier(.2,.9,.2,1), box-shadow 220ms ease;
+}
+
+/* temporary (hover reveal) — overlays content */
+.sidebar.temporary {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 2000;
+  width: 20vw;
+  min-width: 220px;
+  height: 100vh;
+  box-shadow: 2px 0 18px rgba(0,0,0,0.12);
+  transform: translateX(0);
+}
+
+/* fully hidden — move off-screen without taking layout space */
+.sidebar.hidden {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 1900;
+  width: 20vw;
+  min-width: 220px;
+  height: 100vh;
+  transform: translateX(-110%);
+  box-shadow: none;
+}
+
+/* When hidden, show only a slim hover area */
+.sidebar-hover-zone {
+  position: fixed !important;
+  left: 0 !important;
+  top: 0 !important;
+  height: 100vh !important;
+  width: 4px !important; /* slightly wider to be more reliable */
+  z-index: 999999 !important; /* ensure hover strip is above other content */
+  cursor: pointer !important;
+  pointer-events: auto !important;
+  display: block !important;
+  background: transparent !important;
+}
+
+/* Pinned state: normal sidebar in flow */
+.sidebar.pinned { position: relative; width: 20vw; min-width: 220px; }
+
 /* 로고 */
 .sidebar-logo {
   display: flex;
@@ -32,13 +80,13 @@
 }
 
 .sidebar-buttons {
-  flex: 1;
   display: flex;
   gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--nf-border);
-  background: var(--nf-surface);
-  border-radius: var(--nf-radius-md);
+  padding: 0.5rem 0.6rem;
+  /* remove surrounding box so only the buttons are visible */
+  background: transparent;
+  border-bottom: none;
+  border-radius: 0;
 }
 
 /* 새 폴더, 새 노트 버튼 */
@@ -64,6 +112,23 @@
 }
 
 .sidebar-btn:hover { filter: brightness(0.95); }
+
+.sidebar-toggle {
+  background: var(--nf-surface-2);
+  border: 1px solid var(--nf-border);
+  color: var(--nf-text);
+  cursor: pointer;
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  margin-left: auto;
+  box-shadow: var(--nf-shadow-sm);
+}
+
+.sidebar-toggle:hover { transform: rotate(10deg); }
 
 /* 필터 버튼 */
 .sidebar-controls button {

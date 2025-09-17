@@ -1,11 +1,11 @@
 // src/components/Sidebar.jsx
 
-import { FaFolderPlus, FaStickyNote } from 'react-icons/fa';
+import { FaFolderPlus, FaStickyNote, FaTimes } from 'react-icons/fa';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import '../css/Sidebar.css';
 
-export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }) {
+export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () => {}, onFilterChange, onSelectFolder, onNoteSelect }) {
   // 1) 로컬 상태
   const [flatFolders, setFlatFolders] = useState([]);       // 서버에서 받아온 폴더 리스트 (평탄화된 배열)
   const [treeFolders, setTreeFolders] = useState([]);       // 트리 구조로 변환된 폴더들
@@ -430,8 +430,54 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
   // ────────────────────────────────────────────────────────────────
   // 최종 렌더링
   // ────────────────────────────────────────────────────────────────
+  const [showOnHover, setShowOnHover] = useState(false)
+
+  // helper to toggle states: pinned <-> hidden
+  const toggleSidebar = () => {
+    if (sidebarState === 'pinned') setSidebarState('hidden')
+    else setSidebarState('pinned')
+  }
+
+  const isTemporary = sidebarState === 'hidden' && showOnHover
+
+  // Fallback: listen to global mousemove near left edge to trigger reveal
+  useEffect(() => {
+    if (sidebarState !== 'hidden') return
+    const onMove = (e) => {
+      try {
+        const x = e.clientX || (e.touches && e.touches[0] && e.touches[0].clientX) || 0
+        // Trigger when cursor is within 4px of the very left edge
+        if (x <= 4) {
+          if (!showOnHover) setShowOnHover(true)
+        } else {
+          if (showOnHover) setShowOnHover(false)
+        }
+      } catch (err) {}
+    }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('touchstart', onMove)
+    return () => {
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('touchstart', onMove)
+    }
+  }, [sidebarState, showOnHover])
+
   return (
-    <aside className="sidebar">
+    <>
+      {/* hover-sensitive thin strip shown when fully hidden */}
+      {sidebarState === 'hidden' && !showOnHover && (
+        <div
+          className="sidebar-hover-zone"
+          onMouseEnter={() => setShowOnHover(true)}
+          aria-hidden={false}
+          title="사이드바 열기"
+        />
+      )}
+
+      <aside
+        className={`sidebar ${isTemporary ? 'temporary' : sidebarState === 'pinned' ? 'pinned' : 'hidden'}`}
+        onMouseLeave={() => { if (isTemporary) setShowOnHover(false) }}
+      >
       {/* 로고 */}
       <div
         className="sidebar-logo"
@@ -443,6 +489,7 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
       >
         <img src="/logo.png" alt="NoteFlow Logo" className="logo-icon" />
         <span className="logo-text">NoteFlow</span>
+        {/* sidebar toggle moved to TopBar; removed inline button here */}
       </div>
 
       {/* 새 폴더 & 새 노트 버튼 */}
@@ -576,5 +623,6 @@ export default function Sidebar({ onFilterChange, onSelectFolder, onNoteSelect }
         </div>
       )}
     </aside>
+    </>
   );
 }

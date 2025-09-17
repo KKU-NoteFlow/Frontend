@@ -5,12 +5,15 @@ import { MdOutlineStarOutline, MdOutlineStarPurple500 } from "react-icons/md";
 import { BsChevronLeft, BsChevronRight } from "react-icons/bs";
 import { TbReload } from "react-icons/tb";
 import '../css/Topbar.css'
+import ColorPalette from './ColorPalette'
 import { IconStar, IconSearch } from '../ui/icons'
 
 export default function TopBar({
   onNewNote,
   currentNote,
-  onToggleFavorite
+  onToggleFavorite,
+  onToggleSidebar, // function from Layout
+  sidebarState
 }) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState([])
@@ -76,6 +79,20 @@ export default function TopBar({
   return (
     <header className="topbar">
       <div className="topbar-left">
+        <div className="icon-btn" onClick={onToggleSidebar} title={sidebarState === 'pinned' ? '사이드바 숨기기' : '사이드바 열기'}>
+          {/* Square with 1/3 divider and arrow indicating show/hide on right 2/3 */}
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+            <rect x="2" y="3" width="20" height="18" rx="2" fill="currentColor" opacity="0.06" />
+            {/* divider at ~1/3 */}
+            <rect x="8.5" y="4" width="1" height="16" fill="currentColor" opacity="0.18" />
+            {/* arrow on right side: points left when pinned (to hide), points right when hidden (to show) */}
+            {sidebarState === 'pinned' ? (
+              <path d="M16 8l-3 4 3 4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            ) : (
+              <path d="M14 8l3 4-3 4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            )}
+          </svg>
+        </div>
         <div className="icon-btn" onClick={handleRefresh} title='새로고침'>
           <TbReload />
         </div>
@@ -132,6 +149,8 @@ export default function TopBar({
             </div>
           </>
         )}
+        <ColorPalette mode={mode} />
+
         <button
           ref={btnRef}
           className="topbar-settings"

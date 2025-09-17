@@ -34,6 +34,8 @@ export default function Layout() {
   const audioChunksRef = useRef([]);
   const [opProgress, setOpProgress] = useState({ visible: false, label: '', value: 0 });
   const [toast, setToast] = useState({ open: false, message: '', variant: 'info' })
+  // sidebarState: 'pinned' (always visible) | 'hidden' (fully hidden; hover reveals temporarily)
+  const [sidebarState, setSidebarState] = useState('pinned')
 
   // 외부(대시보드 등)에서 공용 액션을 트리거할 수 있게 이벤트 리스너 제공
   useEffect(() => {
@@ -397,8 +399,10 @@ const handleRecord = async () => {
   }
 
   return (
-    <div className="layout-container">
+    <div className={`layout-container ${sidebarState === 'hidden' ? 'sidebar-hidden' : ''}`}>
       <Sidebar
+        sidebarState={sidebarState}
+        setSidebarState={setSidebarState}
         onFilterChange={setFilter}
         onSelectFolder={setSelectedFolderId}
         onNoteSelect={setCurrentNote}
@@ -413,6 +417,8 @@ const handleRecord = async () => {
           onSettingsClick={() => navigate('/settings')}
           currentNote={currentNote}
           onToggleFavorite={toggleFavorite}
+          onToggleSidebar={() => setSidebarState(s => s === 'pinned' ? 'hidden' : 'pinned')}
+          sidebarState={sidebarState}
         />
         {/* 작업 툴바: 녹음/요약/업로드/텍스트 변환 */}
         <ActionToolbar

@@ -36,9 +36,21 @@ export default function MainPage() {
   // 폴더(과목) 목록 로드 → 과목별 카드에서 사용
   useEffect(() => {
     fetch(`${API}/api/v1/folders`, { headers: { Authorization: `Bearer ${token}` }})
-      .then(res => (res.ok ? res.json() : []))
+      .then(async (res) => {
+        if (res.status === 401) {
+          console.warn('[Main] 401 Unauthorized when fetching folders; redirecting to login')
+          try { localStorage.removeItem('access_token') } catch {}
+          navigate('/', { replace: true })
+          return []
+        }
+        if (!res.ok) throw new Error('폴더 목록 불러오기 실패')
+        return res.json()
+      })
       .then(setFolders)
-      .catch(() => setFolders([]))
+      .catch((err) => {
+        console.error('[Main] 폴더 불러오기 실패:', err)
+        setFolders([])
+      })
   }, [API, token])
 
   // ────────────────────────────────────────────────────────────────
@@ -76,7 +88,13 @@ export default function MainPage() {
       fetch(`${API}${url}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
-        .then((res) => {
+        .then(async (res) => {
+          if (res.status === 401) {
+            console.warn('[Main] 401 Unauthorized when fetching notes; redirecting to login')
+            try { localStorage.removeItem('access_token') } catch {}
+            navigate('/', { replace: true })
+            return []
+          }
           if (!res.ok) throw new Error('노트 불러오기 실패')
           return res.json()
         })
@@ -98,7 +116,13 @@ export default function MainPage() {
       fetch(`${API}/api/v1/notes`, {
         headers: { Authorization: `Bearer ${token}` }
       })
-        .then((res) => {
+        .then(async (res) => {
+          if (res.status === 401) {
+            console.warn('[Main] 401 Unauthorized when fetching folder notes; redirecting to login')
+            try { localStorage.removeItem('access_token') } catch {}
+            navigate('/', { replace: true })
+            return []
+          }
           if (!res.ok) throw new Error('노트 불러오기 실패')
           return res.json()
         })
@@ -557,40 +581,15 @@ export default function MainPage() {
                         '_blank'
                       )
                     }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      padding: '0.75rem',
-                      borderBottom: '1px solid var(--nf-border)',
-                      cursor: 'pointer',
-                      transition: 'background 0.15s ease',
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--nf-surface-2)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                    style={{ cursor: 'pointer' }}
+                    onMouseEnter={(e) => (e.currentTarget.classList.add('hover'))}
+                    onMouseLeave={(e) => (e.currentTarget.classList.remove('hover'))}
                   >
                     {/* 간단한 파일 아이콘 */}
-                    <div
-                      style={{
-                        width: '32px',
-                        height: '32px',
-                        background: 'var(--nf-surface-2)',
-                        borderRadius: '4px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        marginRight: '0.75rem',
-                        fontSize: '1.2rem',
-                      }}
-                    >
-                      {/* file */}
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span style={{ fontSize: '1rem', color: 'var(--nf-text)' }}>
-                        {f.original_name}
-                      </span>
-                      <span style={{ fontSize: '0.85rem', color: 'var(--nf-muted)' }}>
-                        {new Date(f.created_at).toLocaleDateString()}
-                      </span>
+                    <div className="main-file-icon">{/* file */}</div>
+                    <div className="main-file-meta">
+                      <span className="main-file-name">{f.original_name}</span>
+                      <span className="main-file-date">{new Date(f.created_at).toLocaleDateString()}</span>
                     </div>
                   </li>
                 ))}

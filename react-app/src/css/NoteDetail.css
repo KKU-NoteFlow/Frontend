@@ -2,38 +2,84 @@
 .note-detail {
   display: flex;
   flex-direction: column;
-  height: 100vh;            /* 화면 전체 높이 차지 */
+  min-height: 100vh;
+  padding: 0; /* let the card fill the area */
+  background: transparent;
+}
+
+/* ensure header/editor containers don't constrain width */
+.note-detail > .note-header,
+.note-detail > .note-editor { max-width: none; margin: 0; width: 100%; }
+
+.note-card {
+  background: var(--nf-surface);
+  border: 1px solid var(--nf-border);
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(10,15,10,0.06);
+  overflow: hidden;
+  width: 100%;
+  max-width: none;
+  margin: 0; /* take full width of container */
+  display: flex;
+  flex-direction: column;
+  /* fill most of viewport height (account for topbar) */
+  height: calc(100vh - var(--nf-topbar-h) - 32px);
+  min-height: calc(100vh - var(--nf-topbar-h) - 32px);
 }
 
 .note-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 1.5rem;
-  background: #f5f5f5;       /* 원하시는 색상으로 조정 */
-  border-bottom: 1px solid #ddd;
+  padding: 20px 24px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.6), transparent);
+  border-bottom: 1px solid rgba(0,0,0,0.04);
 }
 
 .note-title {
   margin: 0;
-  font-size: 1.75rem;
+  font-size: 1.6rem;
+  font-weight: 700;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  color: var(--nf-text);
+  letter-spacing: -0.2px;
 }
 
 .save-btn {
   padding: 0.5rem 1rem;
-  background: #007aff;
+  background: var(--nf-primary);
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 8px;
   cursor: pointer;
+  box-shadow: var(--nf-shadow-sm);
 }
 
-.save-btn:disabled {
-  background: #ccc;
-  cursor: not-allowed;
-}
+.save-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .note-editor {
-  flex: 1;                   /* 헤더 제외한 나머지 공간 전부 */
+  padding: 20px 24px 24px 24px;
+  flex: 1;
   overflow: auto;
 }
+
+/* 에디터 내부(렌더된 HTML) 스타일: 읽기 쉽고 노트 느낌 나게 */
+.note-editor .toastui-editor-contents,
+.note-editor .markdown-body {
+  background: transparent;
+  color: var(--nf-text);
+  font-family: 'Noto Serif KR', Georgia, serif;
+  font-size: 1.03rem;
+  line-height: 1.8;
+}
+
+.note-editor img { max-width: 100%; border-radius: 8px; }
+
+.note-editor h1, .note-editor h2, .note-editor h3 { font-family: 'Georgia', serif; color: var(--nf-text); }
+
+.note-editor p { margin: 0 0 1rem 0; }
+
+.note-meta { color: var(--nf-muted); font-size: 0.9rem; margin-top: 6px }
+
+/* 카드 안쪽 패딩을 더 강조하여 제목/본문이 뜨지 않도록 함 */
+.note-card + .note-editor { margin-top: 12px }

@@ -56,6 +56,10 @@
   gap: 0.5rem;
 }
 
+.color-palette { display:flex; gap:8px; align-items:center; }
+.palette-swatch { width:20px; height:20px; border-radius:6px; border:1px solid var(--nf-border); box-shadow: var(--nf-shadow-sm); padding:0; }
+.palette-swatch.selected { outline: 2px solid var(--nf-primary); transform: scale(1.05); }
+
 .topbar-fav,
 .topbar-settings {
   background: none;
