@@ -1,22 +1,37 @@
 // src/components/BottomBar.jsx
 
-import React from 'react'
+import React, { useState } from 'react'
 import '../css/Bottombar.css'
+import { IconMic, IconUpload, IconTextRecognition } from '../ui/icons'
 
-export default function BottomBar({ statusText, isRecording, onRecordClick, onSummarizeClick, onUploadClick, onOcrClick }) {
+export default function BottomBar({ isRecording, onRecordClick, onSummarizeClick, onUploadClick, onOcrClick }) {
+  const [open, setOpen] = useState(false)
+  const toggle = () => setOpen(o => !o)
+
   return (
-    <footer className="bottom-bar">
-      <div className="bottom-status" aria-live="polite">
-        {statusText && <span>🔵 {statusText}</span>}
-      </div>
-      <div className="bottom-actions">
-        <button onClick={onRecordClick}>
-          {isRecording ? '녹음 종료' : '녹음'}
+    <div className="fab-root" aria-hidden={false}>
+      <div className={`fab-container ${open ? 'open' : ''}`}>
+        <button className="fab-action fab-upload" onClick={() => { setOpen(false); onUploadClick && onUploadClick() }} title="업로드" aria-label="업로드">
+          <IconUpload />
+          <span className="fab-label">업로드</span>
         </button>
-        <button disabled={!onSummarizeClick} onClick={onSummarizeClick}>요약</button>
-        <button onClick={onUploadClick}>업로드</button>
-        <button onClick={onOcrClick}>텍스트 변환</button>
+        <button className="fab-action fab-ocr" onClick={() => { setOpen(false); onOcrClick && onOcrClick() }} title="텍스트 변환" aria-label="텍스트 변환">
+          <IconTextRecognition />
+          <span className="fab-label"><span>텍스트</span><span>변환</span></span>
+        </button>
+        <button className="fab-action fab-summarize" onClick={() => { setOpen(false); onSummarizeClick && onSummarizeClick() }} title="요약" aria-label="요약" disabled={!onSummarizeClick}>
+          <span className="fab-ai">AI</span>
+          <span className="fab-label">요약</span>
+        </button>
+        <button className="fab-action fab-record" onClick={() => { setOpen(false); onRecordClick && onRecordClick() }} title={isRecording ? '녹음 종료' : '녹음'} aria-label="녹음">
+          <IconMic />
+          <span className="fab-label">녹음</span>
+        </button>
+
+        <button className="fab-main" onClick={toggle} aria-label={open ? '닫기' : '작업 열기'}>
+          {open ? '×' : '+'}
+        </button>
       </div>
-    </footer>
+    </div>
   )
 }

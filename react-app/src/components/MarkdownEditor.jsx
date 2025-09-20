@@ -4,7 +4,7 @@ import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Image from '@tiptap/extension-image'
 
-export default function MarkdownEditor({ html, onUpdate, uploadImage }) {
+export default function MarkdownEditor({ html, onUpdate, uploadImage, onReady }) {
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -52,6 +52,26 @@ export default function MarkdownEditor({ html, onUpdate, uploadImage }) {
 
   useEffect(() => {
     if (editor) editor.commands.focus()
+  }, [editor])
+
+  // keep editor content in sync when `html` prop changes (e.g., initial load)
+  useEffect(() => {
+    if (!editor) return
+    try {
+      const current = editor.getHTML()
+      if ((html || '') !== current) {
+        editor.commands.setContent(html || '')
+      }
+    } catch (e) {
+      console.error('failed to sync editor content', e)
+    }
+  }, [editor, html])
+
+  useEffect(() => {
+    if (typeof onReady === 'function') {
+      onReady(editor)
+      return () => onReady(null)
+    }
   }, [editor])
 
   return <EditorContent editor={editor} />

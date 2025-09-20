@@ -1,27 +1,26 @@
-.bottom-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.75rem 1.2rem;
-  border-top: 1px solid var(--nf-border);
-  background: var(--nf-surface);
-  font-size: 0.9rem;
-  height: 50px;
-  position: sticky;
-  bottom: 0;
-  z-index: 10;
+.fab-root { position: fixed; right: 20px; bottom: 20px; z-index: 60 }
+
+/* Floating action button container */
+.fab-container { position: relative; width:52px; height:52px; display:flex; align-items:flex-end; justify-content:center }
+.fab-main { width:52px; height:52px; border-radius:50%; background:var(--nf-primary,#377b24); color:#fff; border:none; font-size:22px; line-height:1; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 8px 22px rgba(0,0,0,0.16); padding:0 }
+.fab-action { position:absolute; right:8px; width:64px; height:64px; border-radius:50%; background:#fff; border:1px solid var(--nf-border); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; cursor:pointer; transform: translateY(0); opacity:0; transition: transform 200ms cubic-bezier(.2,.9,.3,1), opacity 180ms ease; padding:6px }
+.fab-container.open .fab-action { opacity:1 }
+.fab-action svg { width:26px; height:26px }
+.fab-action .fab-label { font-size:11px; color:var(--nf-muted,#666); line-height:1; text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center }
+.fab-action .fab-label span { display:block }
+
+.fab-action .fab-ai { display:inline-flex; align-items:center; justify-content:center; width:28px; height:20px; font-weight:700; color:var(--nf-primary,#377b24); font-size:14px }
+.fab-action.fab-record { bottom: 72px }
+.fab-action.fab-summarize { bottom: 140px }
+.fab-action.fab-ocr { bottom: 208px }
+.fab-action.fab-upload { bottom: 276px }
+
+.fab-container.open .fab-action.fab-record { transform: translateY(-8px) }
+.fab-container.open .fab-action.fab-summarize { transform: translateY(-8px) }
+.fab-container.open .fab-action.fab-ocr { transform: translateY(-8px) }
+.fab-container.open .fab-action.fab-upload { transform: translateY(-8px) }
+
+@media (max-width:600px) {
+  .fab-root { right: 12px; bottom: 12px }
+  .fab-action.fab-upload { bottom: 200px }
 }
-
-.bottom-status { color: var(--nf-muted); }
-
-.bottom-actions button {
-  margin-left: 0.8rem;
-  padding: 6px 12px;
-  border-radius: var(--nf-radius-sm);
-  border: 1px solid var(--nf-border);
-  background: var(--nf-surface);
-  cursor: pointer;
-  font-size: 0.9rem;
-}
-
-.bottom-actions button:hover { background: var(--nf-surface-2); }

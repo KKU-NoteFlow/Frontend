@@ -5,15 +5,20 @@
   .signup-logo-box {
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     margin-bottom: 24px;
+    gap: 38px;
+    padding-left: 24px;
   }
-  
+
   .signup-logo-img {
-    width: 90px;
+    height: 60px;
+    width: auto;
+    object-fit: contain;
+    flex-shrink: 0;
   }
-  
-  .signup-logo-text { font-size: 50px; font-weight: bold; color: var(--nf-text); }
+
+  .signup-logo-text { font-size: 50px; font-weight: bold; color: var(--nf-text); line-height: 1; white-space: nowrap; }
   
 .signup-input { width: 92.1%; padding: 12px 14px; margin-bottom: 14px; border: 1px solid var(--nf-border); border-radius: var(--nf-radius-md); font-size: 14px; background-color: var(--nf-surface); color: var(--nf-text); }
 

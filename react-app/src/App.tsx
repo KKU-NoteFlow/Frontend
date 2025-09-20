@@ -11,6 +11,7 @@ import NewNotePage     from './screen/NewNotePage'
 import NoteDetail      from './screen/NoteDetail' // 👈 NoteDetail 컴포넌트
 import NaverCallback   from './screen/NaverCallback'
 import KakaoCallback   from './screen/KakaoCallback'
+import SpeechToText     from './screen/SpeechToText'
 
 import './App.css'
 
@@ -40,6 +41,7 @@ const App: React.FC = () => (
         
         {/* 2. 기존 NoteDetail 라우트를 새로 만든 Wrapper로 교체 */}
         <Route path="/notes/:id"        element={<NoteDetailWithKey />} /> 
+        <Route path="/stt"               element={<SpeechToText />} />
 
       </Route>
 

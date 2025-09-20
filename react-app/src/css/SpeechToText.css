@@ -1,0 +1,9 @@
+.stt-root { padding: 20px; display:flex; justify-content:center }
+.stt-box { max-width:900px; width:100%; background:var(--surface, #fff); border-radius:8px; padding:18px; box-shadow:0 6px 18px rgba(0,0,0,0.06) }
+.stt-controls { display:flex; gap:8px; margin:10px 0 }
+.stt-btn { padding:8px 12px; border-radius:6px; border:1px solid rgba(0,0,0,0.08); background:transparent; cursor:pointer }
+.stt-start { background:#377b24; color:#fff; border-color:transparent }
+.stt-stop { background:#d33; color:#fff; border-color:transparent }
+.stt-area textarea { width:100%; min-height:240px; border:1px solid #e7e7e7; border-radius:6px; padding:12px; resize:vertical }
+.stt-warning { color:#b33; margin-bottom:8px }
+.stt-info { margin-top:12px; font-size:13px; color:var(--muted,#666) }

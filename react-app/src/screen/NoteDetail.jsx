@@ -13,7 +13,10 @@ export default function NoteDetail() {
   const [note, setNote] = useState(null)
   const [html, setHtml] = useState('')
   const [saving, setSaving] = useState(false)
-  const { setCurrentNote, setOnSummarizeClick, setStatusText } = useOutletContext()
+  const { setCurrentNote, setOnSummarizeClick, setOnSttInsert, setOnSttInterimInsert, setStatusText, isRecording } = useOutletContext()
+
+  const editorRef = React.useRef(null)
+  const [sttInterim, setSttInterim] = useState('')
 
   const token = localStorage.getItem('access_token')
   const API = import.meta.env.VITE_API_BASE_URL ?? ''
@@ -55,29 +58,92 @@ export default function NoteDetail() {
     if (!note) return
     setSaving(true)
     try {
+      if (!token) {
+        alert('저장하려면 로그인 정보가 필요합니다.')
+        return
+      }
+      // prefer the editor's current HTML (ensure latest content)
+      const contentToSave = editorRef.current ? editorRef.current.getHTML() : html
+
       const res = await fetch(`${API}/api/v1/notes/${id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({
+      body: JSON.stringify({
           title: note.title,
-          contentHTML: html,
+          content: contentToSave,
           folder_id: note.folder_id
         })
       })
-      if (!res.ok) throw new Error()
+
+      if (!res.ok) {
+        // try to extract error body for debugging
+        let body = ''
+        try { body = await res.text() } catch (e) { body = String(e) }
+        console.error('[NoteDetail] save failed', res.status, body)
+        alert(`저장에 실패했습니다. 서버 응답: ${res.status} ${body}`)
+        return
+      }
+
       const updated = await res.json()
       setNote(updated)
       setCurrentNote?.(updated)
+      // sync editor/html state with server truth
+      const newHtml = updated.contentHTML || updated.content || contentToSave
+      setHtml(newHtml)
+      setLastSavedHtml(newHtml)
       alert('저장되었습니다.')
-    } catch {
-      alert('저장에 실패했습니다.')
+    } catch (e) {
+      console.error('[NoteDetail] save exception', e)
+      alert('저장에 실패했습니다. 콘솔을 확인하세요.')
     } finally {
       setSaving(false)
     }
   }
+
+  // Auto-save: every 5 minutes (300000ms) when note is open; save only if changed
+  const [lastSavedHtml, setLastSavedHtml] = useState(html)
+  useEffect(() => {
+    setLastSavedHtml(html)
+  }, [html])
+
+  useEffect(() => {
+    let timer = null
+    const intervalMs = 1000 * 60 * 5 // 5 minutes
+    const doAutoSave = async () => {
+      if (!note) return
+      // use editor content if available
+      const contentToCheck = editorRef.current ? editorRef.current.getHTML() : html
+      if (contentToCheck === lastSavedHtml) return
+      try {
+        setStatusText?.('자동 저장 중...')
+        const res = await fetch(`${API}/api/v1/notes/${id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ title: note.title, content: contentToCheck, folder_id: note.folder_id })
+        })
+        if (!res.ok) throw new Error('autosave failed')
+        const updated = await res.json()
+        setNote(updated)
+        setCurrentNote?.(updated)
+        setLastSavedHtml(contentToCheck)
+        setStatusText?.('자동 저장 완료')
+      } catch (e) {
+        console.error('자동 저장 실패', e)
+        setStatusText?.('자동 저장 실패')
+      }
+    }
+
+    timer = setInterval(doAutoSave, intervalMs)
+    return () => {
+      if (timer) clearInterval(timer)
+    }
+  }, [html, lastSavedHtml, note, API, token, id, setCurrentNote, setStatusText])
 
   // 에디터 이미지 업로드
   const handleImageUpload = async file => {
@@ -114,6 +180,32 @@ export default function NoteDetail() {
     setOnSummarizeClick?.(() => handleSummarize)
   }, [handleSummarize, setOnSummarizeClick])
 
+  // expose STT-insert function to layout so live STT can append text into the editor
+  useEffect(() => {
+    if (typeof setOnSttInsert !== 'function') return
+    const insert = (text) => {
+      if (!editorRef.current) return
+      try {
+        // insert final recognized text and clear interim
+        editorRef.current.chain().focus().insertContent(`<p>${String(text).replace(/</g, '&lt;')}</p>`).run()
+        setSttInterim('')
+      } catch (e) {
+        console.error('insert stt text failed', e)
+      }
+    }
+    setOnSttInsert(() => insert)
+    return () => setOnSttInsert(null)
+  }, [setOnSttInsert])
+
+  // register interim updater
+  useEffect(() => {
+    if (typeof setOnSttInterimInsert !== 'function') return
+    const interimUpdater = (text) => setSttInterim(String(text || ''))
+    setOnSttInterimInsert(() => interimUpdater)
+    return () => setOnSttInterimInsert(null)
+  }, [setOnSttInterimInsert])
+
+
   if (!note) {
     return (
       <div className="nf-container" style={{ paddingTop: 'var(--nf-space-4)' }}>
@@ -141,7 +233,14 @@ export default function NoteDetail() {
             html={html}
             onUpdate={newHtml => setHtml(newHtml)}
             uploadImage={handleImageUpload}
+            onReady={(ed) => { editorRef.current = ed }}
           />
+          {/* Live interim banner when recording */}
+          {isRecording && (
+            <div style={{ marginTop: 8, padding: '8px 12px', background: 'rgba(55,123,36,0.06)', color: '#1f6f2a', borderRadius: 6 }}>
+              <strong>실시간 인식:</strong>&nbsp;{sttInterim || <em>말하고 계십니다...</em>}
+            </div>
+          )}
         </div>
       </div>
     </div>

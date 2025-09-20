@@ -424,7 +424,9 @@ export default function MainPage() {
               <div style={{ display:'grid', gap:8 }}>
                 {folderTop5.length === 0 && <div style={{ color:'var(--nf-muted)' }}>데이터가 없습니다.</div>}
                 {folderTop5.map((f, idx) => {
-                  const label = f.key === '루트' ? '루트' : `폴더 #${f.key}`
+                  const label = f.key === '루트'
+                    ? '루트'
+                    : (folders.find(ff => ff.id === f.key)?.name || `폴더 #${f.key}`)
                   const pct = Math.round((f.count / Math.max(1, folderTop5[0]?.count || 1)) * 100)
                   return (
                     <div key={idx} style={{ display:'grid', gap:6 }}>

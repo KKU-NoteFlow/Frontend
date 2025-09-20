@@ -5,7 +5,7 @@ import Sidebar from './Sidebar'
 import TopBar from './Topbar'
 import BottomBar from './Bottombar'
 // 디자인 개선: 플로팅 도크 대신 상단 툴바로 배치
-import ActionToolbar from './ActionToolbar'
+// ActionToolbar removed from layout per UX request
 import { Toast } from '../ui'
 import '../css/Layout.css'
 import '../css/Modal.css'    // 모달 전용 스타일
@@ -32,6 +32,9 @@ export default function Layout() {
   const [isRecording, setIsRecording] = useState(false);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
+  const speechRecognitionRef = useRef(null);
+  const [onSttInsert, setOnSttInsert] = useState(null);
+  const [onSttInterimInsert, setOnSttInterimInsert] = useState(null);
   const [opProgress, setOpProgress] = useState({ visible: false, label: '', value: 0 });
   const [toast, setToast] = useState({ open: false, message: '', variant: 'info' })
   // sidebarState: 'pinned' (always visible) | 'hidden' (fully hidden; hover reveals temporarily)
@@ -70,89 +73,76 @@ const parsedNoteId = noteId ? parseInt(noteId, 10) : null;
 const location = useLocation();  // 컴포넌트 함수 내 상단에 위치해야 함
 
 const handleRecord = async () => {
-  if (!isRecording) {
-    // 🎙️ 녹음 시작
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const mediaRecorder = new MediaRecorder(stream);
-    mediaRecorderRef.current = mediaRecorder;
-    audioChunksRef.current = [];
-
-    mediaRecorder.ondataavailable = (event) => {
-      if (event.data.size > 0) {
-        audioChunksRef.current.push(event.data);
-      }
-    };
-
-    mediaRecorder.onstop = async () => {
-      const blob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
-      const formData = new FormData();
-      formData.append('file', blob, 'recording.wav');
-      formData.append('title', '녹음된 노트');
-
-      const API = import.meta.env.VITE_API_BASE_URL ?? '';
-      const token = localStorage.getItem('access_token');
-
-      // 현재 경로가 /notes/:id 형태인지 확인
-      const isNoteDetailPage = /^\/notes\/\d+$/.test(location.pathname);
-      const currentNoteId = isNoteDetailPage ? currentNote?.id : null;
-
-      if (currentNoteId) {
-        formData.append('note_id', currentNoteId);
-      } else if (selectedFolderId) {
-        formData.append('folder_id', selectedFolderId);
-      }
-
-      setStatusText('텍스트 변환 중...');
-
-      try {
-        const response = await fetch(`${API}/api/v1/files/audio`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
-          body: formData,
-        });
-
-        const result = await response.json();
-
-        if (!response.ok) {
-          setStatusText('변환 실패');
-          setToast({ open: true, message: 'STT 처리 실패', variant: 'error' })
-          alert('STT 처리 실패: ' + (result.detail || '서버 오류'));
-          return;
-        }
-
-        const transcript = result.transcript || '';
-
-        if (currentNoteId) {
-          // PATCH 직접 하지 않음: 백엔드에서 append 처리 완료
-          setStatusText('노트에 추가 완료');
-          setToast({ open: true, message: '노트에 추가 완료', variant: 'success' })
-        } else {
-          setStatusText('새 노트 생성 완료');
-          setToast({ open: true, message: '새 노트 생성 완료', variant: 'success' })
-        }
-
-        alert(transcript);
-
-      } catch (error) {
-        console.error('STT 업로드 실패:', error);
-        setStatusText('서버 오류');
-        setToast({ open: true, message: '서버 오류', variant: 'error' })
-      }
-
-      setIsRecording(false);
-      setOpProgress({ visible: false, label: '', value: 0 });
-    };
-
-    mediaRecorder.start();
-    setStatusText('녹음이 진행중입니다...');
-    setOpProgress({ visible: true, label: '녹음 중', value: 25 });
-    setIsRecording(true);
-  } else {
-    // ⏹️ 녹음 종료
-    mediaRecorderRef.current.stop();
-    setOpProgress((p) => ({ ...p, label: '전송 중', value: 60 }));
+  const Win = window
+  const SpeechRecognition = Win.SpeechRecognition || Win.webkitSpeechRecognition
+  if (!SpeechRecognition) {
+    alert('이 브라우저는 Web Speech API를 지원하지 않습니다. Chrome에서 사용하세요.')
+    return
   }
-};
+
+  if (!isRecording) {
+    // 시작: 실시간 브라우저 STT (Chrome)
+    const recog = new SpeechRecognition()
+    recog.continuous = true
+    recog.interimResults = true
+    recog.lang = 'ko-KR'
+
+    recog.onresult = (ev) => {
+      let finalText = ''
+      let interimText = ''
+      for (let i = ev.resultIndex; i < ev.results.length; i++) {
+        const res = ev.results[i]
+        if (res.isFinal) finalText += res[0].transcript
+        else interimText += res[0].transcript
+      }
+      if (finalText) {
+        if (typeof onSttInsert === 'function') {
+          try { onSttInsert(finalText) } catch (e) { console.error('onSttInsert failed', e) }
+        } else {
+          setStatusText((s) => (s ? s + '\n' + finalText : finalText))
+        }
+      }
+      // interim handling
+      if (typeof onSttInterimInsert === 'function') {
+        try { onSttInterimInsert(interimText) } catch (e) { console.error('onSttInterimInsert failed', e) }
+      }
+    }
+
+    recog.onerror = (e) => {
+      console.error('speech recognition error', e)
+      setStatusText('음성 인식 오류')
+      setToast({ open: true, message: '음성 인식 오류', variant: 'error' })
+      setIsRecording(false)
+    }
+
+    recog.onend = () => {
+      setIsRecording(false)
+      setOpProgress({ visible: false, label: '', value: 0 })
+      setStatusText('녹음 종료')
+    }
+
+    speechRecognitionRef.current = recog
+    try {
+      recog.start()
+      setIsRecording(true)
+      setStatusText('음성 인식 중...')
+      setOpProgress({ visible: true, label: '음성 인식', value: 30 })
+    } catch (e) {
+      console.error('recog start err', e)
+    }
+  } else {
+    // 중지
+    try {
+      speechRecognitionRef.current && speechRecognitionRef.current.stop()
+    } catch (e) {
+      console.error('stop err', e)
+    }
+    setIsRecording(false)
+    setOpProgress({ visible: false, label: '', value: 0 })
+    setStatusText('')
+  }
+}
+
 
   // 요약 처리 (페이지 제공 핸들러가 있으면 위임, 없으면 현재 노트로 직접 처리)
   const handleSummarize = async () => {
@@ -195,28 +185,43 @@ const handleRecord = async () => {
     const API = import.meta.env.VITE_API_BASE_URL ?? ''
     const token = localStorage.getItem('access_token')
     try {
-      const res = await fetch(
-        `${API}/api/v1/notes/${currentNote.id}/favorite`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ is_favorite: !currentNote.is_favorite }),
-        }
-      )
+      // optimistic update: reflect UI immediately
+      const newFav = !currentNote.is_favorite
+      const prev = currentNote
+      setCurrentNote({ ...currentNote, is_favorite: newFav })
+
+      const url = `${API}/api/v1/notes/${currentNote.id}/favorite`
+      const bodyData = { is_favorite: newFav }
+      try {
+        console.log('[Layout] toggleFavorite request', { url, body: bodyData })
+      } catch {}
+
+      const res = await fetch(url, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(bodyData),
+      })
+
       if (res.ok) {
         const updated = await res.json()
+        console.log('[Layout] toggleFavorite response', updated)
         setCurrentNote(updated)
         setToast({ open: true, message: '즐겨찾기 업데이트', variant: 'success' })
       } else {
-        alert('즐겨찾기 변경 실패')
+        // revert optimistic
+        setCurrentNote(prev)
+        let body = ''
+        try { body = await res.text() } catch {}
+        console.error('[Layout] toggleFavorite failed', res.status, body)
+        alert(`즐겨찾기 변경 실패: ${res.status} ${body}`)
         setToast({ open: true, message: '즐겨찾기 변경 실패', variant: 'error' })
       }
     } catch (err) {
       console.error('[Layout] 즐겨찾기 처리 중 예외:', err)
-      alert('즐겨찾기 처리 중 오류가 발생했습니다.')
+      alert('즐겨찾기 처리 중 오류가 발생했습니다. 콘솔을 확인하세요.')
     }
   }
 
@@ -420,14 +425,7 @@ const handleRecord = async () => {
           onToggleSidebar={() => setSidebarState(s => s === 'pinned' ? 'hidden' : 'pinned')}
           sidebarState={sidebarState}
         />
-        {/* 작업 툴바: 녹음/요약/업로드/텍스트 변환 */}
-        <ActionToolbar
-          isRecording={isRecording}
-          onRecordClick={handleRecord}
-          onSummarizeClick={handleSummarize}
-          onUploadClick={handleUploadClick}
-          onOcrClick={handleOcrClick}
-        />
+        {/* 작업 툴바 제거됨 (녹음/요약/업로드/텍스트 변환) */}
 
         <div className="layout-main" id="content">
           <Outlet
@@ -438,6 +436,9 @@ const handleRecord = async () => {
               selectedFolderId,
               fileUploadTimestamp,
               setOnSummarizeClick,
+              setOnSttInsert,
+              setOnSttInterimInsert,
+              isRecording,
               setStatusText,
             }}
           />
@@ -514,6 +515,8 @@ const handleRecord = async () => {
           </div>
         </div>
       )}
+
+      {/* STT 모달 제거: 이제 인라인(노트 편집기)로 직접 삽입합니다. */}
     </div>
   )
 }
