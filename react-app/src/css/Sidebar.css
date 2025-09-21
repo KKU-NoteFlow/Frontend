@@ -208,6 +208,13 @@
 .note-label:hover { background: var(--nf-surface-2); }
 .note-label.active { background: var(--nf-surface-2); border-left: 3px solid var(--nf-primary); }
 
+/* 드래그 핸들 */
+.note-label .drag-handle {
+  width: 14px;
+  text-align: center;
+  user-select: none;
+}
+
 /* 컨텍스트 메뉴 */
 .context-menu { background: var(--nf-surface); border: 1px solid var(--nf-border); border-radius: 6px; box-shadow: var(--nf-shadow-lg); width: 160px; }
 .context-menu > div {

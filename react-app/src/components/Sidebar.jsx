@@ -378,8 +378,7 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
             e.dataTransfer.setData('type', 'folder');
           }}
           onClick={() => {
-            // Toggle open/closed only. Do not navigate or change the main
-            // view when a folder is clicked — keep showing the main dashboard.
+            // 폴더는 펼침/접힘만 처리 (원래 동작 유지)
             setOpenMap(p => ({ ...p, [node.id]: !p[node.id] }));
           }}
           onContextMenu={e => {
@@ -404,14 +403,9 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
               <li
                 key={n.id}
                 className={`note-label ${currentNoteId === n.id ? 'active' : ''}`}
-                draggable
-                onDragStart={e => {
-                  e.dataTransfer.setData('noteId', n.id);
-                  e.dataTransfer.setData('type', 'note');
-                }}
                 onClick={() => {
                   navigate(`/notes/${n.id}`);
-                  onNoteSelect?.(n.id);
+                  onNoteSelect?.(n); // 현재 노트 객체 전달 (TopBar 호환)
                 }}
                 onContextMenu={e => {
                   e.preventDefault();
@@ -544,14 +538,9 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
             <li
               key={note.id}
               className={`note-label root ${currentNoteId === note.id ? 'active' : ''}`}
-              draggable
-              onDragStart={e => {
-                e.dataTransfer.setData('type', 'note');
-                e.dataTransfer.setData('noteId', note.id);
-              }}
               onClick={() => {
                 navigate(`/notes/${note.id}`);
-                onNoteSelect?.(note.id);
+                onNoteSelect?.(note); // 현재 노트 객체 전달 (TopBar 호환)
               }}
               onContextMenu={e => {
                 e.preventDefault();

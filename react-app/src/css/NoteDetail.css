@@ -45,6 +45,19 @@
   letter-spacing: -0.2px;
 }
 
+.note-title-input {
+  display: block;
+  width: 100%;
+  font-size: 1.4rem;
+  font-weight: 700;
+  font-family: 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  color: var(--nf-text);
+  background: transparent;
+  border: 1px solid var(--nf-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
 .save-btn {
   padding: 0.5rem 1rem;
   background: var(--nf-primary);
@@ -62,6 +75,113 @@
   flex: 1;
   overflow: auto;
 }
+
+/* Center editor, constrain line length for comfortable reading */
+.note-editor .toastui-editor-defaultUI {
+  max-width: 880px;
+  margin: 0 auto;
+}
+
+/* Single-pane look: hide tabs/mode switch and split visuals */
+.note-editor .toastui-editor-tabs,
+.note-editor .toastui-editor-mode-switch {
+  display: none !important;
+}
+
+/* Softer borders and background for a classy note feel */
+.note-editor .toastui-editor-defaultUI {
+  border: 1px solid var(--nf-border);
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(10,15,10,0.04);
+}
+
+.note-editor .toastui-editor-defaultUI .toastui-editor-main-container,
+.note-editor .toastui-editor-defaultUI .toastui-editor-md-container {
+  border: none !important;
+}
+
+/* Pretty read-only Markdown viewer */
+.note-viewer {
+  max-width: 880px;
+  margin: 0 auto;
+  background: transparent;
+}
+
+.note-viewer__content {
+  font-family: 'Noto Serif KR', Georgia, serif;
+  font-size: 1.06rem;
+  line-height: 1.85;
+  color: var(--nf-text);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.note-viewer__content h1,
+.note-viewer__content h2,
+.note-viewer__content h3 {
+  font-family: 'Georgia', serif;
+  margin-top: 1.8em;
+  margin-bottom: 0.7em;
+}
+
+.note-viewer__content p { margin: 0 0 1.05rem 0; }
+.note-viewer__content ul,
+.note-viewer__content ol { padding-left: 1.3rem; margin-bottom: 1rem; }
+.note-viewer__content li { margin: 0.2rem 0; }
+.note-viewer__content blockquote {
+  margin: 1.2rem 0;
+  padding: 0.75rem 1rem;
+  border-left: 4px solid var(--nf-border);
+  background: rgba(0,0,0,0.02);
+  border-radius: 6px;
+}
+.note-viewer__content hr {
+  border: none;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--nf-border), transparent);
+  margin: 2rem 0;
+}
+.note-viewer__content a { color: var(--nf-primary); text-decoration: none; }
+.note-viewer__content a:hover { text-decoration: underline; }
+.note-viewer__content code { background: rgba(0,0,0,0.04); padding: 0.15em 0.35em; border-radius: 4px; }
+.note-viewer__content pre code { background: none; }
+.note-viewer__content pre {
+  background: #0f1117;
+  color: #e6edf3;
+  padding: 14px 16px;
+  border-radius: 10px;
+  overflow: auto;
+  margin: 1rem 0;
+}
+.note-viewer__content img { max-width: 100%; display: block; margin: 0.5rem auto; border-radius: 8px; }
+
+/* Tables */
+.note-viewer__content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: 0.98rem;
+}
+.note-viewer__content th,
+.note-viewer__content td {
+  border: 1px solid var(--nf-border);
+  padding: 10px 12px;
+}
+.note-viewer__content thead th {
+  background: rgba(0,0,0,0.03);
+  font-weight: 700;
+}
+
+/* highlight.js baseline */
+.hljs {
+  color: #e6edf3;
+}
+.hljs-keyword, .hljs-selector-tag, .hljs-literal, .hljs-type, .hljs-addition { color: #c792ea; }
+.hljs-number, .hljs-selector-attr, .hljs-selector-pseudo { color: #f78c6c; }
+.hljs-string, .hljs-doctag { color: #ecc48d; }
+.hljs-title, .hljs-section { color: #82aaff; }
+.hljs-attribute, .hljs-name, .hljs-variable { color: #f07178; }
+.hljs-comment { color: #5c6773; }
 
 /* 에디터 내부(렌더된 HTML) 스타일: 읽기 쉽고 노트 느낌 나게 */
 .note-editor .toastui-editor-contents,
