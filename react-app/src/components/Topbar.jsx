@@ -1,7 +1,7 @@
 // src/components/Topbar.jsx
 import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { MdOutlineStarOutline, MdOutlineStarPurple500 } from "react-icons/md";
+// star icons cleaned up: use single IconStar and color it when active
 import { BsChevronLeft, BsChevronRight } from "react-icons/bs";
 import { TbReload } from "react-icons/tb";
 import '../css/Topbar.css'
@@ -103,6 +103,7 @@ export default function TopBar({
           <BsChevronRight />
         </div>
         <button className="topbar-new" onClick={onNewNote}>+ 새 노트</button>
+        
         <div className="search-container">
           <div className="search-input-wrap">
           <IconSearch className="search-icon" size={18} stroke={2} />
@@ -135,19 +136,15 @@ export default function TopBar({
 
       <div className="topbar-actions">
         {currentNote && (
-          <>
-            <button
-              className="topbar-fav"
-              onClick={onToggleFavorite}
-              aria-label="즐겨찾기"
-            >
-            <IconStar size={18} strokeWidth={currentNote.is_favorite ? 2.2 : 1.8} />
-            </button>
-
-            <div className="icon-btn-star" onClick={onToggleFavorite} title="즐겨찾기">
-              {currentNote.is_favorite ? <MdOutlineStarOutline /> : <MdOutlineStarPurple500 />}
-            </div>
-          </>
+          <button
+            className="topbar-fav"
+            onClick={onToggleFavorite}
+            aria-label={currentNote.is_favorite ? '즐겨찾기 해제' : '즐겨찾기'}
+            title={currentNote.is_favorite ? '즐겨찾기 해제' : '즐겨찾기'}
+            style={{ color: currentNote.is_favorite ? '#FFD54F' : undefined }}
+          >
+            <IconStar size={18} />
+          </button>
         )}
         <ColorPalette mode={mode} />
 

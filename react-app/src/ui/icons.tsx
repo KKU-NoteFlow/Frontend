@@ -62,3 +62,15 @@ export const IconSearch = makeIcon(<>
   <circle cx="11" cy="11" r="6"/>
   <path d="M20 20l-3.5-3.5"/>
  </>)
+
+export const IconAi = makeIcon(<>
+  <rect x="6" y="6" width="12" height="12" rx="2" />
+  <path d="M3 10h2" />
+  <path d="M3 14h2" />
+  <path d="M21 10h-2" />
+  <path d="M21 14h-2" />
+  <path d="M10 3v2" />
+  <path d="M14 3v2" />
+  <path d="M10 21v-2" />
+  <path d="M14 21v-2" />
+</>)

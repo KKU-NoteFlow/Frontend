@@ -3,8 +3,10 @@ import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate, useOutletContext, useParams } from 'react-router-dom'
 import '@toast-ui/editor/dist/toastui-editor.css';
 import '../css/Main.css'
-import { Skeleton, EmptyState, Card, Progress } from '../ui'
+import { Skeleton, EmptyState, Card, Progress, Modal, Button } from '../ui'
 import DashboardTimetable from '../components/DashboardTimetable'
+import ToastMarkdownEditor from '../components/ToastMarkdownEditor'
+import axios from 'axios'
 
 export default function MainPage() {
   const navigate = useNavigate()
@@ -32,6 +34,59 @@ export default function MainPage() {
 
   const token = localStorage.getItem('access_token')
   const API = import.meta.env.VITE_API_BASE_URL ?? ''
+
+  // ────────────────────────────────────────────────────────────────
+  // Quick Edit modal state
+  // ────────────────────────────────────────────────────────────────
+  const [quickOpen, setQuickOpen] = useState(false)
+  const [quickNote, setQuickNote] = useState(null) // selected note object
+  const [quickTitle, setQuickTitle] = useState('')
+  const [quickContent, setQuickContent] = useState('')
+  const [quickSaving, setQuickSaving] = useState(false)
+
+  const openQuick = (note) => {
+    setQuickNote(note)
+    setQuickTitle(note.title || '')
+    setQuickContent(note.content || '')
+    setQuickOpen(true)
+  }
+  const closeQuick = () => {
+    setQuickOpen(false)
+    setQuickNote(null)
+  }
+  const saveQuick = async () => {
+    if (!quickNote) return
+    setQuickSaving(true)
+    try {
+      const res = await fetch(`${API}/api/v1/notes/${quickNote.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ title: quickTitle, content: quickContent, folder_id: quickNote.folder_id })
+      })
+      if (!res.ok) throw new Error('save failed')
+      const updated = await res.json()
+      setNotes(prev => prev.map(n => n.id === updated.id ? updated : n))
+      closeQuick()
+    } catch (e) {
+      console.error('[QuickEdit] save failed', e)
+      alert('저장 실패')
+    } finally {
+      setQuickSaving(false)
+    }
+  }
+
+  const uploadImageQuick = async (file) => {
+    if (!quickNote) return null
+    const form = new FormData()
+    form.append('upload_file', file)
+    form.append('folder_id', quickNote.folder_id ?? '')
+    const { data } = await axios.post(
+      `${API}/api/v1/files/upload`,
+      form,
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
+    return data.url
+  }
 
   // 폴더(과목) 목록 로드 → 과목별 카드에서 사용
   useEffect(() => {
@@ -377,6 +432,7 @@ export default function MainPage() {
   }
 
   return (
+    <>
     <main className="main-content nf-container" style={{ paddingTop: 'var(--nf-space-4)' }}>
       {/* 퀵 액션 리본 제거: 상단 ActionToolbar로 대체 */}
       {/* ──────────────────────────────────────────────────────────────── */}
@@ -424,7 +480,9 @@ export default function MainPage() {
               <div style={{ display:'grid', gap:8 }}>
                 {folderTop5.length === 0 && <div style={{ color:'var(--nf-muted)' }}>데이터가 없습니다.</div>}
                 {folderTop5.map((f, idx) => {
-                  const label = f.key === '루트' ? '루트' : `폴더 #${f.key}`
+                  const label = f.key === '루트'
+                    ? '루트'
+                    : (folders.find(ff => ff.id === f.key)?.name || `폴더 #${f.key}`)
                   const pct = Math.round((f.count / Math.max(1, folderTop5[0]?.count || 1)) * 100)
                   return (
                     <div key={idx} style={{ display:'grid', gap:6 }}>
@@ -533,8 +591,18 @@ export default function MainPage() {
                     e.dataTransfer.setData('type', 'note')
                   }}
                   onClick={() => navigate(`/notes/${note.id}`)}
+                  onDoubleClick={(e) => { e.preventDefault(); openQuick(note) }}
                 >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
                   <h3 className="main-note-title">{note.title}</h3>
+                  <button
+                    className="nf-btn"
+                    style={{ padding: '4px 8px', fontSize: 12 }}
+                    onClick={(e) => { e.stopPropagation(); openQuick(note) }}
+                  >
+                    빠른 편집
+                  </button>
+                  </div>
                   <p className="main-note-preview">
                     {note.content?.slice(0, 100) || ''}
                   </p>
@@ -604,5 +672,32 @@ export default function MainPage() {
         </>
       )}
     </main>
+    {/* Quick Edit Modal */}
+    <Modal open={quickOpen} onClose={closeQuick} title="빠른 편집">
+      {quickNote && (
+        <div>
+          <input
+            className="nf-input"
+            value={quickTitle}
+            onChange={e => setQuickTitle(e.target.value)}
+            placeholder="제목"
+            style={{ width: '100%', marginBottom: 8 }}
+          />
+          <div style={{ border: '1px solid var(--nf-border)', borderRadius: 8 }}>
+            <ToastMarkdownEditor
+              html={quickContent}
+              onUpdate={setQuickContent}
+              uploadImage={uploadImageQuick}
+              onReady={() => {}}
+            />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
+            <button className="nf-btn" onClick={closeQuick}>취소</button>
+            <Button onClick={saveQuick} disabled={quickSaving}>{quickSaving ? '저장중…' : '저장'}</Button>
+          </div>
+        </div>
+      )}
+    </Modal>
+    </>
   )
 }

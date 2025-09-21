@@ -21,16 +21,21 @@
   
   .login-logo-box {
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
     margin-bottom: 24px;
+    gap: 38px;
+    padding-left: 24px;
   }
-  
+
   .login-logo-img {
-    width: 90px;
+    height: 60px;
+    width: auto;
+    object-fit: contain;
+    flex-shrink: 0;
   }
-  
-  .login-logo-text { font-size: 50px; font-weight: bold; color: var(--nf-text); }
+
+  .login-logo-text { font-size: 50px; font-weight: bold; color: var(--nf-text); line-height: 1; white-space: nowrap; }
   
   .login-input {
     width: 92.1%;
