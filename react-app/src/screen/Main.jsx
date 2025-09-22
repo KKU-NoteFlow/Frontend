@@ -8,121 +8,6 @@ import DashboardTimetable from '../components/DashboardTimetable'
 import ToastMarkdownEditor from '../components/ToastMarkdownEditor'
 import axios from 'axios'
 
-function Checklist({ apiBase, token }) {
-  const [items, setItems] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('nf_checklist') || '[]')
-    } catch { return [] }
-  })
-  const [text, setText] = useState('')
-  const [loading, setLoading] = useState(false)
-
-  // Try to load unfinished items from server if available; otherwise keep localStorage data
-  useEffect(() => {
-    const load = async () => {
-      if (!apiBase || !token) return
-      setLoading(true)
-      try {
-        const res = await fetch(`${apiBase}/api/v1/checklists?is_clear=0`, { headers: { Authorization: `Bearer ${token}` }})
-        if (!res.ok) throw new Error('no-server')
-        const data = await res.json()
-        // Expect array of { id, checklist_title, is_clear }
-        const mapped = data.map(d => ({ id: d.id, text: d.checklist_title, done: !!d.is_clear }))
-        setItems(mapped)
-      } catch (err) {
-        // ignore — keep localStorage fallback
-      } finally {
-        setLoading(false)
-      }
-    }
-    load()
-  }, [apiBase, token])
-
-  useEffect(() => {
-    try { localStorage.setItem('nf_checklist', JSON.stringify(items)) } catch {}
-  }, [items])
-
-  const add = async () => {
-    const t = (text || '').trim()
-    if (!t) return
-    // optimistic id
-    const localId = `local-${Date.now()}-${Math.random()}`
-    const newItem = { id: localId, text: t, done: false }
-    setItems(prev => [newItem, ...prev])
-    setText('')
-
-    if (!apiBase || !token) return
-    try {
-      const res = await fetch(`${apiBase}/api/v1/checklists`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ checklist_title: t })
-      })
-      if (!res.ok) throw new Error('create-failed')
-      const data = await res.json()
-      // replace localId with server id
-      setItems(prev => prev.map(it => it.id === localId ? { id: data.id, text: data.checklist_title, done: !!data.is_clear } : it))
-    } catch (err) {
-      // keep local item as-is
-    }
-  }
-
-  const toggle = async (id) => {
-    // find current item
-    const cur = items.find(i => i.id === id)
-    const newState = cur ? !cur.done : true
-
-    // If toggled to done, remove from visible list (we only show unfinished)
-    setItems(prev => prev.filter(it => it.id !== id))
-
-    // If this is a server-backed item, sync to server
-    if (!apiBase || !token) return
-    if (typeof id === 'string' && id.startsWith('local-')) return
-    try {
-      await fetch(`${apiBase}/api/v1/checklists/${id}/clear`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ is_clear: newState ? 1 : 0 })
-      })
-    } catch (err) {
-      // ignore errors; optimistic removal already applied
-    }
-  }
-
-  return (
-    <div>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-        <input
-          type="text"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') add() }}
-          placeholder="새 체크리스트 항목"
-          style={{
-            flex: 1,
-            padding: '6px 8px',
-            borderRadius: 6,
-            border: '1px solid var(--nf-border)',
-            background: 'var(--nf-surface)',
-            color: 'var(--nf-text)'
-          }}
-        />
-        <button className="nf-btn nf-btn--primary" onClick={add} style={{ whiteSpace: 'nowrap' }}>추가</button>
-      </div>
-      <div style={{ display: 'grid', gap: 6 }}>
-        {loading && <div style={{ color: 'var(--nf-muted)' }}>불러오는 중...</div>}
-        {!loading && items.length === 0 && <div style={{ color: 'var(--nf-muted)' }}>체크리스트가 비어있습니다.</div>}
-        {items.map(item => (
-          <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <input type="checkbox" className="nf-check" checked={!!item.done} onChange={() => toggle(item.id)} />
-            <span style={{ flex: 1, textAlign: 'left', textDecoration: item.done ? 'line-through' : 'none', color: item.done ? 'var(--nf-muted)' : 'inherit' }}>{item.text}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
 export default function MainPage() {
   const navigate = useNavigate()
 
@@ -557,10 +442,24 @@ export default function MainPage() {
         <>
         <div className="dashboard-grid" style={{ marginBottom: 16 }}>
           <div className="dashboard-left-col" ref={leftColRef} style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
-            {/* 체크리스트 (로컬 상태) */}
+            {/* Donut: 이번 주 비중 */}
             <Card>
-              <h3 style={{ marginTop: 0 }}>체크리스트</h3>
-              <Checklist apiBase={API} token={token} />
+              <h3 style={{ marginTop: 0 }}>이번 주 비중</h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <div style={{
+                  width: 72, height: 72, borderRadius: '50%',
+                  background: `conic-gradient(var(--nf-primary) 0 ${weekRate}%, var(--nf-surface-2) ${weekRate}% 100%)`,
+                  display: 'grid', placeItems: 'center'
+                }}>
+                  <div style={{ background: 'var(--nf-surface)', borderRadius: '50%', width: 48, height: 48, display: 'grid', placeItems: 'center', fontWeight: 700 }}>
+                    {weekRate}%
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>{weeklyNotes.length}개</div>
+                  <div style={{ color: 'var(--nf-muted)' }}>이번 주 생성 노트</div>
+                </div>
+              </div>
             </Card>
 
             {/* 최근 30일 생성 추이 */}
