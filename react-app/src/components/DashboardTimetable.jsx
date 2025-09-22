@@ -1,6 +1,6 @@
 // src/components/DashboardTimetable.jsx
 // 무엇을/왜: 에브리타임식 주간 시간표(로컬 저장). 업로드/마법사로 수동 입력 지원.
-import React, { useMemo, useState, useEffect, useRef } from 'react'
+import React, { useMemo, useState, useEffect } from 'react'
 
 const STORAGE_KEY = 'nf-timetable'
 const BG_KEY = 'nf-timetable-bg'
@@ -27,39 +27,14 @@ export default function DashboardTimetable() {
   useEffect(() => { saveItems(items) }, [items])
   useEffect(() => { try { localStorage.setItem(BG_OPACITY_KEY, String(bgOpacity)) } catch {} }, [bgOpacity])
 
-  const toMinutes = (t) => { const [h,m] = t.split(':').map(Number); return h*60+m }
-
-  // Fixed hour range (09:00 - 18:00)
   const hours = useMemo(() => {
     const arr = []
+    // only show 09:00 - 18:00
     for (let h = 9; h <= 18; h++) arr.push(h)
     return arr
   }, [])
 
-  const [cellPx, setCellPx] = useState(56)
-  const rootRef = useRef(null)
-
-  // compute a slightly smaller cell height than available so topbars/margins don't cause clipping
-  useEffect(() => {
-    const compute = () => {
-      try {
-        const rootTop = rootRef.current ? rootRef.current.getBoundingClientRect().top : 0
-        const SAFETY_MARGIN = 200 // slightly smaller safety margin to allow larger cells
-        const MIN_AVAILABLE = 160
-        const available = Math.max(MIN_AVAILABLE, window.innerHeight - rootTop - SAFETY_MARGIN)
-        // choose a size slightly larger than before: cap to original 56, but prefer larger mins
-        const raw = Math.floor(available / hours.length)
-        // increase size: prefer a larger minimum and allow a slightly bigger cap
-        const hh = Math.min(60, Math.max(48, raw))
-        setCellPx(hh)
-      } catch (err) {
-        setCellPx(56)
-      }
-    }
-    compute()
-    window.addEventListener('resize', compute)
-    return () => window.removeEventListener('resize', compute)
-  }, [hours.length])
+  const toMinutes = (t) => { const [h,m] = t.split(':').map(Number); return h*60+m }
 
   const addItem = () => {
     if (!form.title.trim()) return
@@ -85,6 +60,13 @@ export default function DashboardTimetable() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
         <h3 style={{ margin: 0 }}>시간표</h3>
         <div style={{ display: 'flex', gap: 8 }}>
+          <label className="nf-btn nf-btn--sm" style={{ cursor: 'pointer' }}>
+            PNG 업로드
+            <input type="file" accept="image/png" style={{ display: 'none' }} onChange={async (e) => {
+              const f = e.target.files?.[0]; if (!f) return;
+              await onUploadPng(f); e.target.value = ''
+            }} />
+          </label>
           {bg && <button className="nf-btn nf-btn--sm" onClick={() => { setBg(''); try { localStorage.removeItem(BG_KEY) } catch {} }}>배경 지우기</button>}
           <button className="nf-btn nf-btn--primary nf-btn--sm" onClick={() => setOpen(true)}>수업 추가</button>
         </div>
@@ -98,7 +80,7 @@ export default function DashboardTimetable() {
       )}
 
       {/* Grid */}
-      <div className="timetable-wrap" ref={rootRef} style={{ position: 'relative' }}>
+      <div className="timetable-wrap" style={{ position: 'relative' }}>
         {bg && (
           <img src={bg} alt="시간표 배경" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', opacity: bgOpacity, pointerEvents: 'none' }} />
         )}
@@ -109,19 +91,17 @@ export default function DashboardTimetable() {
             <React.Fragment key={h}>
               <div style={{ textAlign: 'right', paddingRight: 4, color: 'var(--nf-muted)' }}>{String(h).padStart(2,'0')}:00</div>
               {days.map(d => (
-                <div key={d+String(h)} style={{ position: 'relative', border: '1px dashed var(--nf-border)', borderRadius: 10, height: cellPx, background: 'linear-gradient(180deg, var(--nf-surface), var(--nf-surface-2))' }}>
+                <div key={d+String(h)} style={{ position: 'relative', border: '1px dashed var(--nf-border)', borderRadius: 10, height: 56, background: 'linear-gradient(180deg, var(--nf-surface), var(--nf-surface-2))' }}>
                   {items.filter(i => i.day === d && Math.floor(toMinutes(i.start)/60) === h)
                     .map(i => {
                       const startM = toMinutes(i.start)
                       const endM = toMinutes(i.end)
                       const dur = Math.max(30, endM - startM)
                       const offset = startM - h*60
-                      const pxPerMin = cellPx / 60
-                      // ensure small rounding doesn't make block invisible
                       return (
                         <div key={i.id} className="nf-card" style={{
                           position: 'absolute', left: 3, right: 3,
-                          top: Math.max(0, offset * pxPerMin), height: Math.max(12, Math.min(cellPx, dur * pxPerMin)),
+                          top: Math.max(0, offset * (56/60)), height: Math.min(56, dur * (56/60)),
                           background: `linear-gradient(180deg, ${i.color}, rgba(0,0,0,0.15))`, color: '#fff', borderColor: 'transparent',
                           padding: 6, borderRadius: 10, boxShadow: 'var(--nf-shadow-md)'
                         }}>
@@ -149,15 +129,15 @@ export default function DashboardTimetable() {
             </div>
             <div className="modal-content">
               <div style={{ display: 'grid', gap: 8 }}>
-                <input className="nf-input" style={{ width: 'calc(100% - 10px)', boxSizing: 'border-box' }} placeholder="과목명" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} />
+                <input className="nf-input" placeholder="과목명" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} />
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-                  <select className="nf-select" style={{ width: 'calc(100% - 10px)', boxSizing: 'border-box' }} value={form.day} onChange={e => setForm({ ...form, day: e.target.value })}>{days.map(d => <option key={d} value={d}>{d}</option>)}</select>
-                  <input className="nf-input" style={{ width: 'calc(100% - 10px)', boxSizing: 'border-box' }} type="time" value={form.start} onChange={e => setForm({ ...form, start: e.target.value })} />
-                  <input className="nf-input" style={{ width: 'calc(100% - 10px)', boxSizing: 'border-box' }} type="time" value={form.end} onChange={e => setForm({ ...form, end: e.target.value })} />
+                  <select className="nf-select" value={form.day} onChange={e => setForm({ ...form, day: e.target.value })}>{days.map(d => <option key={d} value={d}>{d}</option>)}</select>
+                  <input className="nf-input" type="time" value={form.start} onChange={e => setForm({ ...form, start: e.target.value })} />
+                  <input className="nf-input" type="time" value={form.end} onChange={e => setForm({ ...form, end: e.target.value })} />
                 </div>
-                <input className="nf-input" style={{ width: 'calc(100% - 10px)', boxSizing: 'border-box' }} placeholder="장소(선택)" value={form.place} onChange={e => setForm({ ...form, place: e.target.value })} />
+                <input className="nf-input" placeholder="장소(선택)" value={form.place} onChange={e => setForm({ ...form, place: e.target.value })} />
                 <div>
-                  <label>색상 <input type="color" style={{ width: 'calc(100% - 10px)', boxSizing: 'border-box' }} value={form.color} onChange={e => setForm({ ...form, color: e.target.value })} /></label>
+                  <label>색상 <input type="color" value={form.color} onChange={e => setForm({ ...form, color: e.target.value })} /></label>
                 </div>
               </div>
             </div>
