@@ -74,6 +74,7 @@
   padding: 20px 24px 24px 24px;
   flex: 1;
   overflow: auto;
+  position: relative;
 }
 
 /* Center editor, constrain line length for comfortable reading */
@@ -203,3 +204,18 @@
 
 /* 카드 안쪽 패딩을 더 강조하여 제목/본문이 뜨지 않도록 함 */
 .note-card + .note-editor { margin-top: 12px }
+
+/* STT interim overlay shown in editor while recording */
+.stt-interim-overlay {
+  position: absolute;
+  left: 40px;
+  right: 40px;
+  bottom: 24px;
+  color: #8a8a8a;
+  font-style: italic;
+  font-size: 0.98rem;
+  pointer-events: none;
+  white-space: pre-wrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

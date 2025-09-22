@@ -35,6 +35,7 @@ export default function Layout() {
   const speechRecognitionRef = useRef(null);
   const [onSttInsert, setOnSttInsert] = useState(null);
   const [onSttInterimInsert, setOnSttInterimInsert] = useState(null);
+  const [onRequestEdit, setOnRequestEdit] = useState(null);
   const [opProgress, setOpProgress] = useState({ visible: false, label: '', value: 0 });
   const [toast, setToast] = useState({ open: false, message: '', variant: 'info' })
   // sidebarState: 'pinned' (always visible) | 'hidden' (fully hidden; hover reveals temporarily)
@@ -72,7 +73,7 @@ const { noteId } = useParams();
 const parsedNoteId = noteId ? parseInt(noteId, 10) : null;
 const location = useLocation();  // 컴포넌트 함수 내 상단에 위치해야 함
 
-const handleRecord = async () => {
+  const handleRecord = async () => {
   const Win = window
   const SpeechRecognition = Win.SpeechRecognition || Win.webkitSpeechRecognition
   if (!SpeechRecognition) {
@@ -82,6 +83,26 @@ const handleRecord = async () => {
 
   if (!isRecording) {
     // 시작: 실시간 브라우저 STT (Chrome)
+    // If we have a selected/current note, ensure we are on its detail page and request editor focus at end
+    try {
+      if (currentNote) {
+        const target = `/notes/${currentNote.id}`
+        if (!local.pathname.startsWith('/notes/') || parsedNoteId !== currentNote.id) {
+          navigate(target)
+        }
+
+        // Wait briefly for NoteDetail to mount and register STT handlers and onRequestEdit
+        const start = Date.now()
+        const timeoutMs = 1500
+        while ((!onRequestEdit || !onSttInsert || !onSttInterimInsert) && Date.now() - start < timeoutMs) {
+          // eslint-disable-next-line no-await-in-loop
+          await new Promise(r => setTimeout(r, 80))
+        }
+        if (typeof onRequestEdit === 'function') {
+          try { onRequestEdit() } catch (e) { console.error('onRequestEdit failed', e) }
+        }
+      }
+    } catch (e) { console.error('prepare record navigation failed', e) }
     const recog = new SpeechRecognition()
     recog.continuous = true
     recog.interimResults = true
@@ -122,14 +143,14 @@ const handleRecord = async () => {
     }
 
     speechRecognitionRef.current = recog
-    try {
-      recog.start()
-      setIsRecording(true)
-      setStatusText('음성 인식 중...')
-      setOpProgress({ visible: true, label: '음성 인식', value: 30 })
-    } catch (e) {
-      console.error('recog start err', e)
-    }
+      try {
+        recog.start()
+        setIsRecording(true)
+        setStatusText('녹음중입니다.')
+        // Do not show global opProgress bar for recording to avoid duplicate UI
+      } catch (e) {
+        console.error('recog start err', e)
+      }
   } else {
     // 중지
     try {
@@ -440,6 +461,8 @@ const handleRecord = async () => {
               setOnSttInterimInsert,
               isRecording,
               setStatusText,
+              setOpProgress,
+              setOnRequestEdit,
             }}
           />
           {false && (

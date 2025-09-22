@@ -136,6 +136,7 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
     // 5-1) 파일 드롭
     const droppedFiles = e.dataTransfer.files;
     if (droppedFiles?.length) {
+      let lastCreatedNote = null
       for (let i = 0; i < droppedFiles.length; i++) {
         const file = droppedFiles[i];
         const formData = new FormData();
@@ -147,13 +148,51 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
             headers: { Authorization: `Bearer ${token}` },
             body: formData,
           });
-          if (!res.ok) console.error(`[handleDrop] 파일 업로드 실패: ${file.name}`, res.status);
+          if (!res.ok) {
+            console.error(`[handleDrop] 파일 업로드 실패: ${file.name}`, res.status);
+            continue
+          }
+          // 서버가 업로드된 파일의 URL을 반환하면 새 노트로 생성하여 사용자가 바로 활용할 수 있게 함
+          let uploaded = null
+          try { uploaded = await res.json() } catch (e) { uploaded = null }
+          if (uploaded && uploaded.url) {
+            try {
+              const noteBody = {
+                title: uploaded.original_name || file.name || '첨부된 파일',
+                content: `![${(uploaded.original_name||file.name).replace(/"/g,'')}](${uploaded.url})`,
+                folder_id: targetFolderId,
+              }
+              const noteRes = await fetch(`${API}/api/v1/notes`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(noteBody),
+              })
+              if (noteRes.ok) {
+                const created = await noteRes.json()
+                lastCreatedNote = created
+              } else {
+                console.error('[handleDrop] 업로드 후 노트 생성 실패', await noteRes.text())
+              }
+            } catch (e) {
+              console.error('[handleDrop] 업로드 후 노트 생성 중 예외', e)
+            }
+          }
         } catch (err) {
           console.error(`[handleDrop] 파일 업로드 중 예외: ${file.name}`, err);
         }
       }
       await loadNotes();
       onFilterChange('all');
+      // 마지막으로 생성한 노트가 있으면 바로 열어줌
+      if (lastCreatedNote) {
+        try {
+          navigate(`/notes/${lastCreatedNote.id}`)
+          onNoteSelect?.(lastCreatedNote)
+        } catch (e) {}
+      }
       return;
     }
     // 5-2) 노트 드롭
@@ -471,6 +510,8 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
       <aside
         className={`sidebar ${isTemporary ? 'temporary' : sidebarState === 'pinned' ? 'pinned' : 'hidden'}`}
         onMouseLeave={() => { if (isTemporary) setShowOnHover(false) }}
+        onDragOver={e => e.preventDefault()}
+        onDrop={e => handleDrop(e, currentFolderId ?? null)}
       >
       {/* 로고 */}
       <div

@@ -24,3 +24,28 @@
   .fab-root { right: 12px; bottom: 12px }
   .fab-action.fab-upload { bottom: 200px }
 }
+
+/* Recording state: keep record action visible and styled */
+.fab-action.fab-record.recording {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+  background: var(--nf-danger, #c53030);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 10px 24px rgba(197,50,50,0.18);
+}
+.fab-action.fab-record.recording svg { filter: brightness(0) invert(1); }
+
+/* Small status badge above the FAB when recording */
+.fab-status {
+  position: fixed;
+  right: 92px;
+  bottom: 34px;
+  background: rgba(197,50,50,0.95);
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+  z-index: 200;
+}
