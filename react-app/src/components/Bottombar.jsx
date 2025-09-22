@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import '../css/Bottombar.css'
 import { IconMic, IconUpload, IconTextRecognition } from '../ui/icons'
 
-export default function BottomBar({ isRecording, onRecordClick, onSummarizeClick, onUploadClick, onOcrClick }) {
+export default function BottomBar({ isRecording, statusText, onRecordClick, onSummarizeClick, onUploadClick, onOcrClick }) {
   const [open, setOpen] = useState(false)
   const toggle = () => setOpen(o => !o)
 
@@ -23,15 +23,21 @@ export default function BottomBar({ isRecording, onRecordClick, onSummarizeClick
           <span className="fab-ai">AI</span>
           <span className="fab-label">요약</span>
         </button>
-        <button className="fab-action fab-record" onClick={() => { setOpen(false); onRecordClick && onRecordClick() }} title={isRecording ? '녹음 종료' : '녹음'} aria-label="녹음">
+        <button
+          className={`fab-action fab-record ${isRecording ? 'recording' : ''}`}
+          onClick={() => { setOpen(false); onRecordClick && onRecordClick() }}
+          title={isRecording ? '녹음 종료' : '녹음'}
+          aria-label="녹음"
+        >
           <IconMic />
-          <span className="fab-label">녹음</span>
+          <span className="fab-label">{isRecording ? '중지' : '녹음'}</span>
         </button>
 
         <button className="fab-main" onClick={toggle} aria-label={open ? '닫기' : '작업 열기'}>
           {open ? '×' : '+'}
         </button>
       </div>
+      {/* 녹음 상태 배지는 인터림 텍스트로 대체됨 */}
     </div>
   )
 }

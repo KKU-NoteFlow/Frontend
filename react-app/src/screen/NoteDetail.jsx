@@ -17,7 +17,7 @@ export default function NoteDetail() {
   const [saving, setSaving] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [titleText, setTitleText] = useState('')
-  const { setCurrentNote, setOnSummarizeClick, setOnSttInsert, setOnSttInterimInsert, setStatusText, isRecording } = useOutletContext()
+  const { setCurrentNote, setOnSummarizeClick, setOnSttInsert, setOnSttInterimInsert, setStatusText, isRecording, setOpProgress, setOnRequestEdit } = useOutletContext()
 
   const editorRef = React.useRef(null)
   const scrollRef = React.useRef(null)
@@ -186,28 +186,90 @@ export default function NoteDetail() {
     if (!note) return
     setStatusText?.('⏳ 요약 중…')
     try {
+      // Start progress UI (either real updates from server or heuristic)
+      try { setOpProgress?.({ visible: true, label: '요약 중…', value: 5 }) } catch {}
+
       const res = await fetch(`${API}/api/v1/notes/${note.id}/summarize`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       })
       if (!res.ok) throw new Error('summarize start failed')
 
-      // Consume SSE stream until completion so we know when the server finished and saved the summary
+      // Read streaming body (SSE or plain stream). Parse `data:` lines or JSON chunks
       if (res.body && res.body.getReader) {
         const reader = res.body.getReader()
         const decoder = new TextDecoder('utf-8')
         let done = false
-        // optional: accumulate chunks if needed; here we just drain
-        while (!done) {
-          const r = await reader.read()
-          done = r.done
-          if (r.value) {
-            const chunk = decoder.decode(r.value, { stream: true })
-            // You could parse lines starting with `data:` to show live output
+        let buffered = ''
+
+        // heuristic progress increment when server doesn't send explicit progress
+        let heuristicVal = 5
+        const heuristicInterval = setInterval(() => {
+          try {
+            if (!setOpProgress) return
+            heuristicVal = Math.min(85, heuristicVal + 1)
+            setOpProgress(prev => ({ visible: true, label: prev?.label || '요약 중…', value: heuristicVal }))
+          } catch (e) { /* ignore */ }
+        }, 700)
+
+        try {
+          while (!done) {
+            const r = await reader.read()
+            done = r.done
+            if (r.value) {
+              const chunk = decoder.decode(r.value, { stream: true })
+              buffered += chunk
+
+              // Process possible SSE style lines (data: ...). Split by double newline which separates events.
+              const parts = buffered.split(/\n\n/)
+              // keep last partial chunk in buffer
+              buffered = parts.pop() || ''
+
+              for (const part of parts) {
+                const lines = part.split(/\n/).map(l => l.trim()).filter(Boolean)
+                for (const line of lines) {
+                  // only process data: lines for SSE; fallback to raw text
+                  let content = line
+                  if (line.startsWith('data:')) content = line.replace(/^data:\s*/, '')
+
+                  // try JSON
+                  try {
+                    const obj = JSON.parse(content)
+                    // look for numeric progress properties
+                    const pct = obj.progress ?? obj.percent ?? obj.pct ?? obj.value
+                    if (typeof pct === 'number' && setOpProgress) {
+                      const v = Math.max(0, Math.min(100, Math.round(pct)))
+                      setOpProgress({ visible: true, label: obj.message || '요약 중…', value: v })
+                      continue
+                    }
+                    // if message only
+                    if (obj.message && setOpProgress) {
+                      setOpProgress(prev => ({ visible: true, label: obj.message, value: prev?.value || 10 }))
+                      continue
+                    }
+                  } catch (e) {
+                    // not JSON, continue to regex checks
+                  }
+
+                  // look for percentage like "45%"
+                  const m = content.match(/(\d{1,3})\s*%/)
+                  if (m && setOpProgress) {
+                    const v = Math.max(0, Math.min(100, parseInt(m[1], 10)))
+                    setOpProgress({ visible: true, label: '요약 진행', value: v })
+                    continue
+                  }
+
+                  // fallback: update label with any text lines
+                  if (setOpProgress) setOpProgress(prev => ({ visible: true, label: content.slice(0, 80), value: prev?.value || 10 }))
+                }
+              }
+            }
           }
+        } finally {
+          clearInterval(heuristicInterval)
         }
       } else {
-        // Fallback: wait for body to resolve
+        // Fallback: non-streaming response, drain it (may block until done)
         try { await res.text() } catch {}
       }
 
@@ -223,9 +285,14 @@ export default function NoteDetail() {
         setHtml(newHtml)
         setLastSavedHtml(newHtml)
       }
+
+      // finalize progress UI
+      try { setOpProgress?.({ visible: true, label: '완료', value: 100 }) } catch {}
+      setTimeout(() => { try { setOpProgress?.({ visible: false, label: '', value: 0 }) } catch {} }, 700)
       setStatusText?.('✅ 요약 완료')
     } catch (e) {
       console.error('[summarize] failed', e)
+      try { setOpProgress?.({ visible: false, label: '', value: 0 }) } catch {}
       setStatusText?.('❌ 요약 실패')
     }
   }, [API, token, note, setStatusText, setCurrentNote])
@@ -242,11 +309,23 @@ export default function NoteDetail() {
       if (!isEditing) {
         if (scrollRef.current) lastScrollRef.current = scrollRef.current.scrollTop
         setIsEditing(true)
+        // allow editor to mount and onReady to set editorRef
+      setTimeout(() => {
+          try {
+            // Append the final recognized text to the markdown state so it always goes to the end
+            setHtml(prev => (String(prev || '') + '\n\n' + String(text)).trim())
+            // focus editor if controller available
+            try { editorRef.current && editorRef.current.chain().focus().run && editorRef.current.chain().focus() } catch (e) { /* ignore */ }
+            setSttInterim('')
+          } catch (e) { console.error('insert stt text failed on delayed run', e) }
+        }, 150)
+        return
       }
       if (!editorRef.current) return
       try {
-        // insert final recognized text and clear interim
-        editorRef.current.chain().focus().insertContent(`<p>${String(text).replace(/</g, '&lt;')}</p>`).run()
+        // Append recognized final text to html state so it appears at the end
+        setHtml(prev => (String(prev || '') + '\n\n' + String(text)).trim())
+        try { editorRef.current && editorRef.current.chain().focus() } catch (e) { /* ignore */ }
         setSttInterim('')
       } catch (e) {
         console.error('insert stt text failed', e)
@@ -255,6 +334,37 @@ export default function NoteDetail() {
     setOnSttInsert(() => insert)
     return () => setOnSttInsert(null)
   }, [setOnSttInsert, isEditing])
+
+  // expose a request-edit handler so layout can ask this page to enter edit mode and focus end
+  useEffect(() => {
+    if (typeof setOnRequestEdit !== 'function') return
+    const requestEdit = () => {
+      if (!isEditing) {
+        if (scrollRef.current) lastScrollRef.current = scrollRef.current.scrollTop
+        setIsEditing(true)
+        setTimeout(() => {
+          try {
+            const ed = editorRef.current
+            if (ed) {
+              try { ed.chain().focus() } catch (e) { try { ed.focus && ed.focus() } catch {} }
+            }
+            // ensure editor scrolls to bottom so caret appears at end
+            try { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight } catch (e) {}
+          } catch (e) { /* ignore */ }
+        }, 120)
+      } else {
+        try {
+          const ed = editorRef.current
+          if (ed) {
+            try { ed.chain().focus() } catch (e) { try { ed.focus && ed.focus() } catch {} }
+            try { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight } catch (e) {}
+          }
+        } catch (e) { /* ignore */ }
+      }
+    }
+    setOnRequestEdit(() => requestEdit)
+    return () => setOnRequestEdit(null)
+  }, [setOnRequestEdit, isEditing])
 
   // register interim updater
   useEffect(() => {
@@ -361,10 +471,10 @@ export default function NoteDetail() {
               />
             )}
           </ErrorBoundary>
-          {/* Live interim banner when recording */}
-          {isRecording && (
-            <div style={{ marginTop: 8, padding: '8px 12px', background: 'rgba(55,123,36,0.06)', color: '#1f6f2a', borderRadius: 6 }}>
-              <strong>실시간 인식:</strong>&nbsp;{sttInterim || <em>말하고 계십니다...</em>}
+          {/* Live interim overlay inside editor (gray example text). Shows while interim exists. */}
+          {sttInterim && (
+            <div className="stt-interim-overlay" aria-hidden>
+              {sttInterim}
             </div>
           )}
         </div>
