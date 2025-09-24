@@ -20,8 +20,9 @@ export default function Layout() {
     }
   }, [local.pathname, navigate])
   
-  const { folderId: folderIdParam } = useParams()
+  const { folderId: folderIdParam, noteId } = useParams()
   const parsedFolderId = folderIdParam ? parseInt(folderIdParam, 10) : null
+  const parsedNoteId = noteId ? parseInt(noteId, 10) : null
 
   // 1) 검색, 필터, 현재 노트, 현재 폴더 상태
   const [search, setSearch] = useState('')
@@ -66,83 +67,76 @@ export default function Layout() {
   // ────────────────────────────────────────────────────────────────
   // 2) 녹음 / 요약 / OCR 상태 텍스트
   // ────────────────────────────────────────────────────────────────
-// ──────────────────────────────────────────────
-// (수정) 2) 녹음 상태
-// ──────────────────────────────────────────────
-const { noteId } = useParams();
-const parsedNoteId = noteId ? parseInt(noteId, 10) : null;
-const location = useLocation();  // 컴포넌트 함수 내 상단에 위치해야 함
-
   const handleRecord = async () => {
-  const Win = window
-  const SpeechRecognition = Win.SpeechRecognition || Win.webkitSpeechRecognition
-  if (!SpeechRecognition) {
-    alert('이 브라우저는 Web Speech API를 지원하지 않습니다. Chrome에서 사용하세요.')
-    return
-  }
-
-  if (!isRecording) {
-    // 시작: 실시간 브라우저 STT (Chrome)
-    // If we have a selected/current note, ensure we are on its detail page and request editor focus at end
-    try {
-      if (currentNote) {
-        const target = `/notes/${currentNote.id}`
-        if (!local.pathname.startsWith('/notes/') || parsedNoteId !== currentNote.id) {
-          navigate(target)
-        }
-
-        // Wait briefly for NoteDetail to mount and register STT handlers and onRequestEdit
-        const start = Date.now()
-        const timeoutMs = 1500
-        while ((!onRequestEdit || !onSttInsert || !onSttInterimInsert) && Date.now() - start < timeoutMs) {
-          // eslint-disable-next-line no-await-in-loop
-          await new Promise(r => setTimeout(r, 80))
-        }
-        if (typeof onRequestEdit === 'function') {
-          try { onRequestEdit() } catch (e) { console.error('onRequestEdit failed', e) }
-        }
-      }
-    } catch (e) { console.error('prepare record navigation failed', e) }
-    const recog = new SpeechRecognition()
-    recog.continuous = true
-    recog.interimResults = true
-    recog.lang = 'ko-KR'
-
-    recog.onresult = (ev) => {
-      let finalText = ''
-      let interimText = ''
-      for (let i = ev.resultIndex; i < ev.results.length; i++) {
-        const res = ev.results[i]
-        if (res.isFinal) finalText += res[0].transcript
-        else interimText += res[0].transcript
-      }
-      if (finalText) {
-        if (typeof onSttInsert === 'function') {
-          try { onSttInsert(finalText) } catch (e) { console.error('onSttInsert failed', e) }
-        } else {
-          setStatusText((s) => (s ? s + '\n' + finalText : finalText))
-        }
-      }
-      // interim handling
-      if (typeof onSttInterimInsert === 'function') {
-        try { onSttInterimInsert(interimText) } catch (e) { console.error('onSttInterimInsert failed', e) }
-      }
+    const Win = window
+    const SpeechRecognition = Win.SpeechRecognition || Win.webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      alert('이 브라우저는 Web Speech API를 지원하지 않습니다. Chrome에서 사용하세요.')
+      return
     }
 
-    recog.onerror = (e) => {
-      console.error('speech recognition error', e)
-      setStatusText('음성 인식 오류')
-      setToast({ open: true, message: '음성 인식 오류', variant: 'error' })
-      setIsRecording(false)
-    }
+    if (!isRecording) {
+      // 시작: 실시간 브라우저 STT (Chrome)
+      // If we have a selected/current note, ensure we are on its detail page and request editor focus at end
+      try {
+        if (currentNote) {
+          const target = `/notes/${currentNote.id}`
+          if (!local.pathname.startsWith('/notes/') || parsedNoteId !== currentNote.id) {
+            navigate(target)
+          }
 
-    recog.onend = () => {
-      setIsRecording(false)
-      setOpProgress({ visible: false, label: '', value: 0 })
-      setStatusText('녹음 종료')
-    }
+          // Wait briefly for NoteDetail to mount and register STT handlers and onRequestEdit
+          const start = Date.now()
+          const timeoutMs = 1500
+          while ((!onRequestEdit || !onSttInsert || !onSttInterimInsert) && Date.now() - start < timeoutMs) {
+            // eslint-disable-next-line no-await-in-loop
+            await new Promise(r => setTimeout(r, 80))
+          }
+          if (typeof onRequestEdit === 'function') {
+            try { onRequestEdit() } catch (e) { console.error('onRequestEdit failed', e) }
+          }
+        }
+      } catch (e) { console.error('prepare record navigation failed', e) }
+      const recog = new SpeechRecognition()
+      recog.continuous = true
+      recog.interimResults = true
+      recog.lang = 'ko-KR'
 
-    speechRecognitionRef.current = recog
+      recog.onresult = (ev) => {
+        let finalText = ''
+        let interimText = ''
+        for (let i = ev.resultIndex; i < ev.results.length; i++) {
+          const res = ev.results[i]
+          if (res.isFinal) finalText = res[0].transcript
+          else interimText = res[0].transcript
+        }
+        if (finalText) {
+          if (typeof onSttInsert === 'function') {
+            try { onSttInsert(finalText) } catch (e) { console.error('onSttInsert failed', e) }
+          } else {
+            setStatusText((s) => (s ? (s + '\n' + finalText) : finalText))
+          }
+        }
+        // interim handling
+        if (typeof onSttInterimInsert === 'function') {
+          try { onSttInterimInsert(interimText) } catch (e) { console.error('onSttInterimInsert failed', e) }
+        }
+      }
+
+      recog.onerror = (e) => {
+        console.error('speech recognition error', e)
+        setStatusText('음성 인식 오류')
+        setToast({ open: true, message: '음성 인식 오류', variant: 'error' })
+        setIsRecording(false)
+      }
+
+      recog.onend = () => {
+        setIsRecording(false)
+        setOpProgress({ visible: false, label: '', value: 0 })
+        setStatusText('녹음 종료')
+      }
+
+      speechRecognitionRef.current = recog
       try {
         recog.start()
         setIsRecording(true)
@@ -151,19 +145,18 @@ const location = useLocation();  // 컴포넌트 함수 내 상단에 위치해�
       } catch (e) {
         console.error('recog start err', e)
       }
-  } else {
-    // 중지
-    try {
-      speechRecognitionRef.current && speechRecognitionRef.current.stop()
-    } catch (e) {
-      console.error('stop err', e)
+    } else {
+      // 중지
+      try {
+        speechRecognitionRef.current && speechRecognitionRef.current.stop()
+      } catch (e) {
+        console.error('stop err', e)
+      }
+      setIsRecording(false)
+      setOpProgress({ visible: false, label: '', value: 0 })
+      setStatusText('')
     }
-    setIsRecording(false)
-    setOpProgress({ visible: false, label: '', value: 0 })
-    setStatusText('')
   }
-}
-
 
   // 요약 처리 (페이지 제공 핸들러가 있으면 위임, 없으면 현재 노트로 직접 처리)
   const handleSummarize = async () => {
@@ -253,12 +246,28 @@ const location = useLocation();  // 컴포넌트 함수 내 상단에 위치해�
   const [uploadTargetFolderId, setUploadTargetFolderId] = useState(null)
   const [fileUploadTimestamp, setFileUploadTimestamp] = useState(0)
 
+  // 업로드 기본 대상 폴더 결정 규칙:
+  // 1) 현재 선택된 폴더
+  // 2) 현재 열려 있는 노트의 폴더
+  // 3) 마지막 업로드했던 폴더(localStorage)
+  // 4) 루트(null)
+  const getDefaultUploadFolderId = () => {
+    if (selectedFolderId != null) return selectedFolderId
+    if (currentNote && typeof currentNote.folder_id !== 'undefined') return currentNote.folder_id ?? null
+    try {
+      const last = localStorage.getItem('nf-last-upload-folder')
+      if (last !== null) {
+        if (last === 'null') return null
+        const parsed = parseInt(last, 10)
+        if (!Number.isNaN(parsed)) return parsed
+      }
+    } catch {}
+    return null
+  }
+
   const handleUploadClick = () => {
-    if (selectedFolderId == null) {
-      alert('먼저 사이드바에서 업로드할 폴더를 선택하세요.')
-      return
-    }
-    setUploadTargetFolderId(selectedFolderId)
+    const fid = getDefaultUploadFolderId()
+    setUploadTargetFolderId(fid)
     fileInputRef.current && fileInputRef.current.click()
   }
 
@@ -270,18 +279,19 @@ const location = useLocation();  // 컴포넌트 함수 내 상단에 위치해�
     const token = localStorage.getItem('access_token')
     const folderIdToUpload = uploadTargetFolderId
 
-    if (!folderIdToUpload) {
-      alert('유효한 폴더 ID가 없습니다. 업로드를 취소합니다.')
-      e.target.value = null
-      return
-    }
-
     setOpProgress({ visible: true, label: '업로드 준비', value: 0 })
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
       const formData = new FormData()
       formData.append('upload_file', file)
-      formData.append('folder_id', String(folderIdToUpload))
+      // 백엔드 호환: 루트 업로드 시 빈 문자열로 전달
+      if (parsedNoteId) {
+             // 노트 상세 화면이면 → note_id로 업로드
+             formData.append('note_id', String(parsedNoteId))
+           } else {
+             // 아니면 기존처럼 폴더에 업로드
+             formData.append('folder_id', folderIdToUpload == null ? '' : String(folderIdToUpload))
+           }
 
       console.log(
         `[Layout] 파일 업로드 요청 → "${file.name}" → 폴더 ${folderIdToUpload}`
@@ -303,12 +313,18 @@ const location = useLocation();  // 컴포넌트 함수 내 상단에 위치해�
         } else {
           console.log(`[Layout] 파일 업로드 성공: "${file.name}"`)
           setToast({ open: true, message: `업로드 성공: ${file.name}`, variant: 'success' })
+          // 마지막 업로드 폴더 기억
+          try { localStorage.setItem('nf-last-upload-folder', String(folderIdToUpload)) } catch {}
         }
       } catch (err) {
         console.error(`[Layout] 파일 업로드 중 예외: "${file.name}"`, err)
         setToast({ open: true, message: `업로드 예외: ${file.name}`, variant: 'error' })
       }
-      setOpProgress({ visible: true, label: `업로드 진행 (${i + 1}/${files.length})`, value: Math.round(((i + 1) / files.length) * 100) })
+      setOpProgress({
+        visible: true,
+        label: `업로드 진행 (${i + 1}/${files.length})`,
+        value: Math.round(((i + 1) / files.length) * 100)
+      })
     }
 
     setFileUploadTimestamp(Date.now())
@@ -336,12 +352,11 @@ const location = useLocation();  // 컴포넌트 함수 내 상단에 위치해�
     if (!files || files.length === 0) return
 
     const file = files[0]
-    const baseName = file.name.replace(/\.[^/.]+$/, '')  // 수정: 확장자 제거
+    const baseName = file.name.replace(/\.[^/.]+$/, '')  // 확장자 제거
     const formData = new FormData()
     formData.append('file', file)
-    if (selectedFolderId != null) {
-      formData.append('folder_id', String(selectedFolderId))
-    }
+    // 루트 허용
+    formData.append('folder_id', selectedFolderId == null ? '' : String(selectedFolderId))
 
     const API = import.meta.env.VITE_API_BASE_URL ?? ''
     const token = localStorage.getItem('access_token')
@@ -349,7 +364,7 @@ const location = useLocation();  // 컴포넌트 함수 내 상단에 위치해�
 
     try {
       setOpProgress({ visible: true, label: 'OCR 업로드', value: 30 })
-      const langs = 'kor+eng'
+      const langs = 'koreng'
       const maxPages = 50
       const res = await fetch(`${API}/api/v1/files/ocr?langs=${encodeURIComponent(langs)}&max_pages=${encodeURIComponent(maxPages)}`, {
         method: 'POST',
@@ -364,28 +379,21 @@ const location = useLocation();  // 컴포넌트 함수 내 상단에 위치해�
         return
       }
 
-      // 변경: 공통 OCR 응답 스키마 사용
+      // 공통 OCR 응답 스키마
       const ocr = await res.json()
       const { note_id, text, warnings = [], results = [] } = ocr
-      // 변경: 결과는 모달 대신 새 노트 화면으로 즉시 이동
+
+      // 노트가 생성되면 바로 이동
       if (note_id) {
         navigate(`/notes/${note_id}`)
         window.dispatchEvent(new Event('nf:notes-refresh'))
         setStatusText('OCR 완료')
         setOpProgress({ visible: true, label: '완료', value: 100 })
+        setToast({ open: true, message: 'OCR 완료', variant: 'success' })
         return
       }
-      if (warnings.length) console.warn('[OCR warnings]', warnings)
-      setOpProgress({ visible: true, label: 'OCR 처리 중', value: 70 })
 
-      // 변경: 생성된 노트 상세 정보를 한 번 더 조회하여 currentNote 설정
-      const noteRes = await fetch(`${API}/api/v1/notes/${note_id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      const newNote = await noteRes.json()
-      setCurrentNote(newNote)
-
-      // 모달 내용 구성 (페이지별 결과 + 병합 텍스트 + 경고)
+      // note_id가 없다면 모달로 결과 표시
       let bodyHtml = `<h3>${baseName} OCR 결과</h3>`
       if (Array.isArray(results) && results.length) {
         const pages = results
@@ -393,10 +401,10 @@ const location = useLocation();  // 컴포넌트 함수 내 상단에 위치해�
           .sort((a,b) => (a.page||0)-(b.page||0))
           .map(r => `<h4 style="margin:8px 0">Page ${r.page}</h4><pre class="modal-pre">${(r.text||'').replace(/[&<>]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[s]))}</pre>`)
           .join('')
-        bodyHtml += pages
+        bodyHtml = pages
       }
       if (text?.trim()) {
-        bodyHtml += `<h3>병합 텍스트</h3><pre class="modal-pre">${text.replace(/[&<>]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[s]))}</pre>`
+        bodyHtml = `<h3>병합 텍스트</h3><pre class="modal-pre">${text.replace(/[&<>]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[s]))}</pre>`
       }
       if (warnings.length) {
         bodyHtml += `<div style="background: color-mix(in oklab, var(--nf-warning) 12%, var(--nf-surface)); border:1px solid color-mix(in oklab, var(--nf-warning) 45%, var(--nf-border)); border-radius:8px; padding:8px; margin-top:8px; color: var(--nf-text)"><b>경고</b><ul style="margin:4px 0 0 18px">${warnings.map(w=>`<li>${w.replace(/[&<>]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[s]))}</li>`).join('')}</ul></div>`
