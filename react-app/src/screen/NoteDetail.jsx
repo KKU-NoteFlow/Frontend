@@ -172,7 +172,7 @@ export default function NoteDetail() {
   const handleImageUpload = async file => {
     const form = new FormData()
     form.append('upload_file', file)
-    form.append('folder_id', note?.folder_id ?? '')
+    form.append('note_id', note?.id ?? '')   // 수정: note_id로 업로드
     const { data } = await axios.post(
       `${API}/api/v1/files/upload`,
       form,
@@ -478,6 +478,36 @@ export default function NoteDetail() {
             </div>
           )}
         </div>
+
+        {/* 첨부파일 미리보기 */}
+        {note.files && note.files.length > 0 && (
+          <div className="note-attachments">
+            <h3>📎 첨부 파일</h3>
+            {note.files.map((file) => {
+              if (file.content_type?.startsWith('image/')) {
+                return (
+                  <div key={file.file_id} className="attachment">
+                    <img src={file.url} alt={file.original_name} style={{ maxWidth: '100%', margin: '8px 0' }} />
+                  </div>
+                )
+              }
+              if (file.content_type === 'application/pdf') {
+                return (
+                  <div key={file.file_id} className="attachment">
+                    <embed src={file.url} type="application/pdf" width="100%" height="500px" />
+                  </div>
+                )
+              }
+              return (
+                <div key={file.file_id} className="attachment">
+                  <a href={file.url} target="_blank" rel="noopener noreferrer">
+                    {file.original_name}
+                  </a>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
     </div>
   )
