@@ -58,3 +58,37 @@
 .skip-link { position: absolute; left: -9999px; top: auto; width: 1px; height: 1px; overflow: hidden; }
 .skip-link:focus { left: 8px; top: 8px; width: auto; height: auto; padding: 8px 12px; background: var(--nf-primary); color: #fff; border-radius: var(--nf-radius-sm); z-index: 1000; }
 
+
+/* Checklist item custom checkbox: white background, border follows theme color */
+.nf-checklist-checkbox {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: #fff;
+  border: 2px solid var(--nf-primary);
+  border-radius: 4px;
+  display: inline-block;
+  vertical-align: middle;
+  position: relative;
+  cursor: pointer;
+}
+.nf-checklist-checkbox:checked {
+  background: var(--nf-primary);
+  border-color: var(--nf-primary);
+}
+.nf-checklist-checkbox:checked::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 5px;
+  height: 9px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.nf-checklist-checkbox:focus {
+  outline: 2px solid color-mix(in oklab, var(--nf-primary) 30%, transparent);
+  outline-offset: 2px;
+}

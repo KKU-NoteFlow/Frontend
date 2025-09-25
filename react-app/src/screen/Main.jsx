@@ -5,6 +5,7 @@ import '@toast-ui/editor/dist/toastui-editor.css';
 import '../css/Main.css'
 import { Skeleton, EmptyState, Card, Progress, Modal, Button } from '../ui'
 import DashboardTimetable from '../components/DashboardTimetable'
+import ChecklistCard from '../components/ChecklistCard'
 import ToastMarkdownEditor from '../components/ToastMarkdownEditor'
 import axios from 'axios'
 
@@ -442,24 +443,9 @@ export default function MainPage() {
         <>
         <div className="dashboard-grid" style={{ marginBottom: 16 }}>
           <div className="dashboard-left-col" ref={leftColRef} style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
-            {/* Donut: 이번 주 비중 */}
+            {/* Checklist: 이번주 비중 자리에 체크리스트 표시 */}
             <Card>
-              <h3 style={{ marginTop: 0 }}>이번 주 비중</h3>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                <div style={{
-                  width: 72, height: 72, borderRadius: '50%',
-                  background: `conic-gradient(var(--nf-primary) 0 ${weekRate}%, var(--nf-surface-2) ${weekRate}% 100%)`,
-                  display: 'grid', placeItems: 'center'
-                }}>
-                  <div style={{ background: 'var(--nf-surface)', borderRadius: '50%', width: 48, height: 48, display: 'grid', placeItems: 'center', fontWeight: 700 }}>
-                    {weekRate}%
-                  </div>
-                </div>
-                <div>
-                  <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>{weeklyNotes.length}개</div>
-                  <div style={{ color: 'var(--nf-muted)' }}>이번 주 생성 노트</div>
-                </div>
-              </div>
+              <ChecklistCard API={API} token={token} />
             </Card>
 
             {/* 최근 30일 생성 추이 */}
