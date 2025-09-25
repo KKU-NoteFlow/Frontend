@@ -1,14 +1,12 @@
-// src/components/Layout.jsx
-import React, { useState, useRef, useEffect } from 'react'
+/* eslint-disable no-console */
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { Outlet, useNavigate, useParams, useLocation } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import TopBar from './Topbar'
 import BottomBar from './Bottombar'
-// 디자인 개선: 플로팅 도크 대신 상단 툴바로 배치
-// ActionToolbar removed from layout per UX request
 import { Toast } from '../ui'
 import '../css/Layout.css'
-import '../css/Modal.css'    // 모달 전용 스타일
+import '../css/Modal.css'
 
 export default function Layout() {
   const navigate = useNavigate()
@@ -24,7 +22,6 @@ export default function Layout() {
   const parsedFolderId = folderIdParam ? parseInt(folderIdParam, 10) : null
   const parsedNoteId = noteId ? parseInt(noteId, 10) : null
 
-  // 1) 검색, 필터, 현재 노트, 현재 폴더 상태
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all')
   const [currentNote, setCurrentNote] = useState(null)
@@ -39,10 +36,8 @@ export default function Layout() {
   const [onRequestEdit, setOnRequestEdit] = useState(null);
   const [opProgress, setOpProgress] = useState({ visible: false, label: '', value: 0 });
   const [toast, setToast] = useState({ open: false, message: '', variant: 'info' })
-  // sidebarState: 'pinned' (always visible) | 'hidden' (fully hidden; hover reveals temporarily)
   const [sidebarState, setSidebarState] = useState('pinned')
 
-  // 외부(대시보드 등)에서 공용 액션을 트리거할 수 있게 이벤트 리스너 제공
   useEffect(() => {
     const onRecord = () => handleRecord()
     const onSummarize = () => handleSummarize()
@@ -64,9 +59,6 @@ export default function Layout() {
     setSelectedFolderId(parsedFolderId)
   }, [parsedFolderId])
 
-  // ────────────────────────────────────────────────────────────────
-  // 2) 녹음 / 요약 / OCR 상태 텍스트
-  // ────────────────────────────────────────────────────────────────
   const handleRecord = async () => {
     const Win = window
     const SpeechRecognition = Win.SpeechRecognition || Win.webkitSpeechRecognition
@@ -76,20 +68,15 @@ export default function Layout() {
     }
 
     if (!isRecording) {
-      // 시작: 실시간 브라우저 STT (Chrome)
-      // If we have a selected/current note, ensure we are on its detail page and request editor focus at end
       try {
         if (currentNote) {
           const target = `/notes/${currentNote.id}`
           if (!local.pathname.startsWith('/notes/') || parsedNoteId !== currentNote.id) {
             navigate(target)
           }
-
-          // Wait briefly for NoteDetail to mount and register STT handlers and onRequestEdit
           const start = Date.now()
           const timeoutMs = 1500
           while ((!onRequestEdit || !onSttInsert || !onSttInterimInsert) && Date.now() - start < timeoutMs) {
-            // eslint-disable-next-line no-await-in-loop
             await new Promise(r => setTimeout(r, 80))
           }
           if (typeof onRequestEdit === 'function') {
@@ -117,7 +104,6 @@ export default function Layout() {
             setStatusText((s) => (s ? (s + '\n' + finalText) : finalText))
           }
         }
-        // interim handling
         if (typeof onSttInterimInsert === 'function') {
           try { onSttInterimInsert(interimText) } catch (e) { console.error('onSttInterimInsert failed', e) }
         }
@@ -141,12 +127,10 @@ export default function Layout() {
         recog.start()
         setIsRecording(true)
         setStatusText('녹음중입니다.')
-        // Do not show global opProgress bar for recording to avoid duplicate UI
       } catch (e) {
         console.error('recog start err', e)
       }
     } else {
-      // 중지
       try {
         speechRecognitionRef.current && speechRecognitionRef.current.stop()
       } catch (e) {
@@ -158,7 +142,6 @@ export default function Layout() {
     }
   }
 
-  // 요약 처리 (페이지 제공 핸들러가 있으면 위임, 없으면 현재 노트로 직접 처리)
   const handleSummarize = async () => {
     if (typeof onSummarizeClick === 'function') {
       try {
@@ -193,13 +176,11 @@ export default function Layout() {
     }
   }
 
-  // 3) 즐겨찾기 토글
   const toggleFavorite = async () => {
     if (!currentNote) return
     const API = import.meta.env.VITE_API_BASE_URL ?? ''
     const token = localStorage.getItem('access_token')
     try {
-      // optimistic update: reflect UI immediately
       const newFav = !currentNote.is_favorite
       const prev = currentNote
       setCurrentNote({ ...currentNote, is_favorite: newFav })
@@ -225,7 +206,6 @@ export default function Layout() {
         setCurrentNote(updated)
         setToast({ open: true, message: '즐겨찾기 업데이트', variant: 'success' })
       } else {
-        // revert optimistic
         setCurrentNote(prev)
         let body = ''
         try { body = await res.text() } catch {}
@@ -241,16 +221,10 @@ export default function Layout() {
 
   const handleNewNote = () => navigate('/notes/new')
 
-  // 4) 파일 업로드 처리
   const fileInputRef = useRef()
   const [uploadTargetFolderId, setUploadTargetFolderId] = useState(null)
   const [fileUploadTimestamp, setFileUploadTimestamp] = useState(0)
 
-  // 업로드 기본 대상 폴더 결정 규칙:
-  // 1) 현재 선택된 폴더
-  // 2) 현재 열려 있는 노트의 폴더
-  // 3) 마지막 업로드했던 폴더(localStorage)
-  // 4) 루트(null)
   const getDefaultUploadFolderId = () => {
     if (selectedFolderId != null) return selectedFolderId
     if (currentNote && typeof currentNote.folder_id !== 'undefined') return currentNote.folder_id ?? null
@@ -284,14 +258,13 @@ export default function Layout() {
       const file = files[i]
       const formData = new FormData()
       formData.append('upload_file', file)
-      // 백엔드 호환: 루트 업로드 시 빈 문자열로 전달
       if (parsedNoteId) {
-             // 노트 상세 화면이면 → note_id로 업로드
-             formData.append('note_id', String(parsedNoteId))
-           } else {
-             // 아니면 기존처럼 폴더에 업로드
-             formData.append('folder_id', folderIdToUpload == null ? '' : String(folderIdToUpload))
-           }
+        formData.append('note_id', String(parsedNoteId))
+      } else {
+        if (folderIdToUpload != null) {
+          formData.append('folder_id', String(folderIdToUpload))
+        }
+      }
 
       console.log(
         `[Layout] 파일 업로드 요청 → "${file.name}" → 폴더 ${folderIdToUpload}`
@@ -313,7 +286,6 @@ export default function Layout() {
         } else {
           console.log(`[Layout] 파일 업로드 성공: "${file.name}"`)
           setToast({ open: true, message: `업로드 성공: ${file.name}`, variant: 'success' })
-          // 마지막 업로드 폴더 기억
           try { localStorage.setItem('nf-last-upload-folder', String(folderIdToUpload)) } catch {}
         }
       } catch (err) {
@@ -333,14 +305,13 @@ export default function Layout() {
     setOpProgress({ visible: false, label: '', value: 0 })
   }
 
-  // 5) OCR 전용 파일 선택 및 처리
+  // ── OCR ──────────────────────────────────────────────────────────
   const ocrInputRef = useRef()
   const [showModal, setShowModal] = useState(false)
   const [modalTitle, setModalTitle] = useState('')
   const [modalBody, setModalBody] = useState('')
 
   const handleOcrClick = () => {
-    // 폴더가 없어도 진행 가능: 루트에 노트 생성
     if (selectedFolderId == null) {
       console.warn('폴더 미선택 상태로 OCR을 진행합니다. 노트는 루트에 생성됩니다.')
     }
@@ -352,11 +323,13 @@ export default function Layout() {
     if (!files || files.length === 0) return
 
     const file = files[0]
-    const baseName = file.name.replace(/\.[^/.]+$/, '')  // 확장자 제거
+    const baseName = file.name.replace(/\.[^/.]+$/, '')
     const formData = new FormData()
     formData.append('file', file)
-    // 루트 허용
-    formData.append('folder_id', selectedFolderId == null ? '' : String(selectedFolderId))
+    // ✅ folder_id는 선택됐을 때만 보냄(422 방지)
+    if (selectedFolderId != null) {
+      formData.append('folder_id', String(selectedFolderId))
+    }
 
     const API = import.meta.env.VITE_API_BASE_URL ?? ''
     const token = localStorage.getItem('access_token')
@@ -364,7 +337,8 @@ export default function Layout() {
 
     try {
       setOpProgress({ visible: true, label: 'OCR 업로드', value: 30 })
-      const langs = 'koreng'
+      // ✅ 잘못된 koreng → 올바른 kor+eng 로 고정(필요하면 설정에서 변경 가능)
+      const langs = 'kor+eng'
       const maxPages = 50
       const res = await fetch(`${API}/api/v1/files/ocr?langs=${encodeURIComponent(langs)}&max_pages=${encodeURIComponent(maxPages)}`, {
         method: 'POST',
@@ -379,21 +353,27 @@ export default function Layout() {
         return
       }
 
-      // 공통 OCR 응답 스키마
       const ocr = await res.json()
-      const { note_id, text, warnings = [], results = [] } = ocr
+      const { note_id, text = '', warnings = [], results = [] } = ocr
 
-      // 노트가 생성되면 바로 이동
-      if (note_id) {
+      // ✅ 결과 텍스트가 짧으면(<= 8자) 자동 생성/이동하지 않고 미리보기만 띄움
+      const shortText = (text || '').trim()
+      const tooShort = shortText.length <= 8
+
+      if (note_id && !tooShort) {
         navigate(`/notes/${note_id}`)
         window.dispatchEvent(new Event('nf:notes-refresh'))
         setStatusText('OCR 완료')
         setOpProgress({ visible: true, label: '완료', value: 100 })
-        setToast({ open: true, message: 'OCR 완료', variant: 'success' })
+        if (warnings.length) {
+          setToast({ open: true, message: `OCR 완료 (경고 ${warnings.length}건)`, variant: 'warning' })
+        } else {
+          setToast({ open: true, message: 'OCR 완료', variant: 'success' })
+        }
         return
       }
 
-      // note_id가 없다면 모달로 결과 표시
+      // 노트 미생성 또는 결과가 너무 짧을 때 → 모달 표시
       let bodyHtml = `<h3>${baseName} OCR 결과</h3>`
       if (Array.isArray(results) && results.length) {
         const pages = results
@@ -403,17 +383,17 @@ export default function Layout() {
           .join('')
         bodyHtml = pages
       }
-      if (text?.trim()) {
-        bodyHtml = `<h3>병합 텍스트</h3><pre class="modal-pre">${text.replace(/[&<>]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[s]))}</pre>`
+      if (shortText) {
+        bodyHtml = `<h3>병합 텍스트</h3><pre class="modal-pre">${shortText.replace(/[&<>]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[s]))}</pre>`
       }
       if (warnings.length) {
         bodyHtml += `<div style="background: color-mix(in oklab, var(--nf-warning) 12%, var(--nf-surface)); border:1px solid color-mix(in oklab, var(--nf-warning) 45%, var(--nf-border)); border-radius:8px; padding:8px; margin-top:8px; color: var(--nf-text)"><b>경고</b><ul style="margin:4px 0 0 18px">${warnings.map(w=>`<li>${w.replace(/[&<>]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[s]))}</li>`).join('')}</ul></div>`
       }
-      setModalTitle(`${baseName} OCR 결과`)
+      setModalTitle(`${baseName} OCR 결과${tooShort ? ' (내용이 너무 짧아 노트를 만들지 않았어요)' : ''}`)
       setModalBody(bodyHtml)
       setShowModal(true)
-      setStatusText('OCR 완료')
-      setToast({ open: true, message: 'OCR 완료', variant: 'success' })
+      setStatusText(tooShort ? 'OCR 결과가 너무 짧음' : 'OCR 완료')
+      setToast({ open: true, message: tooShort ? 'OCR 결과가 너무 짧아요' : 'OCR 완료', variant: tooShort ? 'warning' : 'success' })
       setOpProgress({ visible: true, label: '완료', value: 100 })
     } catch (err) {
       console.error('[Layout] OCR 중 예외:', err)
@@ -454,7 +434,6 @@ export default function Layout() {
           onToggleSidebar={() => setSidebarState(s => s === 'pinned' ? 'hidden' : 'pinned')}
           sidebarState={sidebarState}
         />
-        {/* 작업 툴바 제거됨 (녹음/요약/업로드/텍스트 변환) */}
 
         <div className="layout-main" id="content">
           <Outlet
@@ -473,9 +452,7 @@ export default function Layout() {
               setOnRequestEdit,
             }}
           />
-          {false && (
-            <div />
-          )}
+          {false && (<div />)}
         </div>
 
         {opProgress.visible && (
@@ -491,8 +468,6 @@ export default function Layout() {
           </div>
         )}
 
-        {/* Show bottom bar only on note detail pages (file/note view).
-            The main dashboard does not need the global bottom bar. */}
         {local.pathname.startsWith('/notes/') && (
           <BottomBar
             statusText={statusText}
@@ -507,16 +482,8 @@ export default function Layout() {
         <Toast open={toast.open} message={toast.message} variant={toast.variant} onClose={() => setToast({ ...toast, open: false })} />
       </div>
 
-      {/* 숨겨진 파일 input (업로드용) */}
-      <input
-        type="file"
-        ref={fileInputRef}
-        style={{ display: 'none' }}
-        multiple
-        onChange={handleFilesSelected}
-      />
+      <input type="file" ref={fileInputRef} style={{ display: 'none' }} multiple onChange={handleFilesSelected} />
 
-      {/* 숨겨진 파일 input (OCR용) */}
       <input
         type="file"
         ref={ocrInputRef}
@@ -530,24 +497,15 @@ export default function Layout() {
           <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>{modalTitle}</h2>
-              <button className="modal-close-btn" onClick={closeModal}>
-                ×
-              </button>
+              <button className="modal-close-btn" onClick={closeModal}>×</button>
             </div>
-            <div
-              className="modal-content"
-              dangerouslySetInnerHTML={{ __html: modalBody }}
-            />
+            <div className="modal-content" dangerouslySetInnerHTML={{ __html: modalBody }} />
             <div className="modal-footer">
-              <button className="modal-ok-btn" onClick={closeModal}>
-                확인
-              </button>
+              <button className="modal-ok-btn" onClick={closeModal}>확인</button>
             </div>
           </div>
         </div>
       )}
-
-      {/* STT 모달 제거: 이제 인라인(노트 편집기)로 직접 삽입합니다. */}
     </div>
   )
 }
