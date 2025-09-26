@@ -1,42 +1,24 @@
-// src/components/Sidebar.jsx
-
 import { FaFolderPlus, FaStickyNote, FaTimes } from 'react-icons/fa';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import '../css/Sidebar.css';
 
 export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () => {}, onFilterChange, onSelectFolder, onNoteSelect }) {
-  // 1) 로컬 상태
-  const [flatFolders, setFlatFolders] = useState([]);       // 서버에서 받아온 폴더 리스트 (평탄화된 배열)
-  const [treeFolders, setTreeFolders] = useState([]);       // 트리 구조로 변환된 폴더들
-  const [openMap, setOpenMap] = useState({});               // 폴더 열림/닫힘 상태
-  const [folderNoteMap, setFolderNoteMap] = useState({});   // 폴더별 노트 매핑
-  const [folderContextMenu, setFolderContextMenu] = useState({
-    visible: false,
-    x: 0,
-    y: 0,
-    folderId: null,
-  });
-  const [noteContextMenu, setNoteContextMenu] = useState({
-    visible: false,
-    x: 0,
-    y: 0,
-    noteId: null,
-    folderId: null,
-  });
+  const [flatFolders, setFlatFolders] = useState([]);
+  const [treeFolders, setTreeFolders] = useState([]);
+  const [openMap, setOpenMap] = useState({});
+  const [folderNoteMap, setFolderNoteMap] = useState({});
+  const [folderContextMenu, setFolderContextMenu] = useState({ visible: false, x: 0, y: 0, folderId: null });
+  const [noteContextMenu, setNoteContextMenu] = useState({ visible: false, x: 0, y: 0, noteId: null, folderId: null });
   const [activeFilter, setActiveFilter] = useState('all'); // 'all' | 'recent' | 'favorites'
 
   const navigate = useNavigate();
   const contextMenuRef = useRef(null);
-  // 현재 활성 항목 파악(폴더/노트)
   const params = useParams();
   const location = useLocation();
   const currentFolderId = params.folderId ? parseInt(params.folderId, 10) : null;
   const currentNoteId = /^\/notes\//.test(location.pathname) && params.id ? parseInt(params.id, 10) : null;
 
-  // ────────────────────────────────────────────────────────────────
-  // 1) 폴더 목록 불러오기 (GET /api/v1/folders)
-  // ────────────────────────────────────────────────────────────────
   const loadFolders = useCallback(async () => {
     try {
       const API = import.meta.env.VITE_API_BASE_URL ?? '';
@@ -49,7 +31,6 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
         return;
       }
       const data = await res.json();
-      // 트리 형태 JSON을 재귀 탐색하여 평탄화
       const flattenList = [];
       const traverse = (node) => {
         flattenList.push({
@@ -69,9 +50,6 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
     }
   }, []);
 
-  // ────────────────────────────────────────────────────────────────
-  // 2) 노트 목록 불러오기 (GET /api/v1/notes)
-  // ────────────────────────────────────────────────────────────────
   const loadNotes = useCallback(async () => {
     try {
       const API = import.meta.env.VITE_API_BASE_URL ?? '';
@@ -96,17 +74,11 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
     }
   }, []);
 
-  // ────────────────────────────────────────────────────────────────
-  // 3) 마운트 시 폴더 & 노트 동시에 로드
-  // ────────────────────────────────────────────────────────────────
   useEffect(() => {
     loadFolders();
     loadNotes();
   }, [loadFolders, loadNotes]);
 
-  // ────────────────────────────────────────────────────────────────
-  // 4) flatFolders + folderNoteMap → 트리 구조로 변환
-  // ────────────────────────────────────────────────────────────────
   useEffect(() => {
     const tempMap = {};
     flatFolders.forEach(f => {
@@ -123,9 +95,6 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
     setTreeFolders(roots);
   }, [flatFolders, folderNoteMap]);
 
-  // ────────────────────────────────────────────────────────────────
-  // 5) 드래그 앤 드롭 처리 (파일 / 노트 / 폴더)
-  // ────────────────────────────────────────────────────────────────
   const handleDrop = async (e, targetFolderId) => {
     e.preventDefault();
     const API = import.meta.env.VITE_API_BASE_URL ?? '';
@@ -133,8 +102,8 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
     const dataType = e.dataTransfer.getData('type');
     const droppedNoteId = e.dataTransfer.getData('noteId');
     const droppedFolderId = e.dataTransfer.getData('folderId');
-    // 5-1) 파일 드롭
     const droppedFiles = e.dataTransfer.files;
+
     if (droppedFiles?.length) {
       let lastCreatedNote = null
       for (let i = 0; i < droppedFiles.length; i++) {
@@ -152,7 +121,6 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
             console.error(`[handleDrop] 파일 업로드 실패: ${file.name}`, res.status);
             continue
           }
-          // 서버가 업로드된 파일의 URL을 반환하면 새 노트로 생성하여 사용자가 바로 활용할 수 있게 함
           let uploaded = null
           try { uploaded = await res.json() } catch (e) { uploaded = null }
           if (uploaded && uploaded.url) {
@@ -186,7 +154,6 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
       }
       await loadNotes();
       onFilterChange('all');
-      // 마지막으로 생성한 노트가 있으면 바로 열어줌
       if (lastCreatedNote) {
         try {
           navigate(`/notes/${lastCreatedNote.id}`)
@@ -195,15 +162,12 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
       }
       return;
     }
-    // 5-2) 노트 드롭
+
     if (dataType === 'note' && droppedNoteId) {
       try {
         const res = await fetch(`${API}/api/v1/notes/${droppedNoteId}`, {
           method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ folder_id: targetFolderId }),
         });
         if (!res.ok) console.error('[handleDrop] 노트 이동 실패', res.status);
@@ -214,7 +178,7 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
       }
       return;
     }
-    // 5-3) 폴더 드롭
+
     if (dataType === 'folder' && droppedFolderId) {
       const dfId = parseInt(droppedFolderId, 10);
       const tfId = targetFolderId;
@@ -222,10 +186,7 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
       try {
         const res = await fetch(`${API}/api/v1/folders/${dfId}`, {
           method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ parent_id: tfId }),
         });
         if (!res.ok) console.error('[handleDrop] 폴더 이동 실패', res.status);
@@ -237,7 +198,6 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
     }
   };
 
-  // 자식-조상 관계 검사
   const isDescendant = (droppedId, targetId) => {
     const stack = [droppedId];
     const seen = new Set();
@@ -257,9 +217,6 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
     return false;
   };
 
-  // ────────────────────────────────────────────────────────────────
-  // 6) 폴더/노트 CRUD 핸들러 (생성·수정·삭제)
-  // ────────────────────────────────────────────────────────────────
   const handleNewFolder = async parentId => {
     const name = prompt('새 폴더 이름을 입력하세요');
     if (!name) return;
@@ -268,10 +225,7 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
       const token = localStorage.getItem('access_token');
       const res = await fetch(`${API}/api/v1/folders`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ name, parent_id: parentId }),
       });
       if (!res.ok) throw new Error('폴더 생성 실패');
@@ -293,10 +247,7 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
       const token = localStorage.getItem('access_token');
       const res = await fetch(`${API}/api/v1/notes`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ title, content: '', folder_id: folderId }),
       });
       if (!res.ok) throw new Error('노트 생성 실패');
@@ -315,10 +266,7 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
       const token = localStorage.getItem('access_token');
       const res = await fetch(`${API}/api/v1/folders/${folderId}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ name }),
       });
       if (!res.ok) throw new Error('폴더 이름 변경 실패');
@@ -337,10 +285,7 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
       const token = localStorage.getItem('access_token');
       const res = await fetch(`${API}/api/v1/notes/${noteId}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ title, folder_id: folderId }),
       });
       if (!res.ok) throw new Error('노트 이름 변경 실패');
@@ -385,9 +330,6 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
     }
   };
 
-  // ────────────────────────────────────────────────────────────────
-  // 7) 컨텍스트 메뉴 외부 클릭 시 닫기
-  // ────────────────────────────────────────────────────────────────
   useEffect(() => {
     const handler = e => {
       if (contextMenuRef.current && !contextMenuRef.current.contains(e.target)) {
@@ -399,9 +341,6 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  // ────────────────────────────────────────────────────────────────
-  // 8) 트리 렌더링
-  // ────────────────────────────────────────────────────────────────
   const renderTree = nodes =>
     nodes.map(node => (
       <li
@@ -417,7 +356,6 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
             e.dataTransfer.setData('type', 'folder');
           }}
           onClick={() => {
-            // 폴더는 펼침/접힘만 처리 (원래 동작 유지)
             setOpenMap(p => ({ ...p, [node.id]: !p[node.id] }));
           }}
           onContextMenu={e => {
@@ -444,7 +382,7 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
                 className={`note-label ${currentNoteId === n.id ? 'active' : ''}`}
                 onClick={() => {
                   navigate(`/notes/${n.id}`);
-                  onNoteSelect?.(n); // 현재 노트 객체 전달 (TopBar 호환)
+                  onNoteSelect?.(n);
                 }}
                 onContextMenu={e => {
                   e.preventDefault();
@@ -460,26 +398,15 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
       </li>
     ));
 
-  // ────────────────────────────────────────────────────────────────
-  // 최종 렌더링
-  // ────────────────────────────────────────────────────────────────
   const [showOnHover, setShowOnHover] = useState(false)
-
-  // helper to toggle states: pinned <-> hidden
-  const toggleSidebar = () => {
-    if (sidebarState === 'pinned') setSidebarState('hidden')
-    else setSidebarState('pinned')
-  }
-
+  const toggleSidebar = () => { if (sidebarState === 'pinned') setSidebarState('hidden'); else setSidebarState('pinned') }
   const isTemporary = sidebarState === 'hidden' && showOnHover
 
-  // Fallback: listen to global mousemove near left edge to trigger reveal
   useEffect(() => {
     if (sidebarState !== 'hidden') return
     const onMove = (e) => {
       try {
         const x = e.clientX || (e.touches && e.touches[0] && e.touches[0].clientX) || 0
-        // Trigger when cursor is within 4px of the very left edge
         if (x <= 4) {
           if (!showOnHover) setShowOnHover(true)
         } else {
@@ -495,9 +422,27 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
     }
   }, [sidebarState, showOnHover])
 
+  // ☆ 즐겨찾기 탭용 평탄화된 즐겨찾기 목록
+  const favoriteNotes = React.useMemo(() => {
+    const arr = []
+    Object.values(folderNoteMap).forEach(list => {
+      (list || []).forEach(n => { if (Boolean(n.is_favorite)) arr.push(n) })
+    })
+    // 루트(null) 키에 없는 경우 대비
+    if (folderNoteMap[null]) {
+      folderNoteMap[null].forEach(n => { if (Boolean(n.is_favorite)) arr.push(n) })
+    }
+    // 중복 제거
+    const seen = new Set()
+    const uniq = []
+    arr.forEach(n => { if (!seen.has(n.id)) { seen.add(n.id); uniq.push(n) } })
+    // 최신순
+    uniq.sort((a,b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at))
+    return uniq
+  }, [folderNoteMap])
+
   return (
     <>
-      {/* hover-sensitive thin strip shown when fully hidden */}
       {sidebarState === 'hidden' && !showOnHover && (
         <div
           className="sidebar-hover-zone"
@@ -513,146 +458,153 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
         onDragOver={e => e.preventDefault()}
         onDrop={e => handleDrop(e, currentFolderId ?? null)}
       >
-      {/* 로고 */}
-      <div
-        className="sidebar-logo"
-        style={{ cursor: 'pointer' }}
-        onClick={() => {
-          onSelectFolder?.(null);
-          navigate('/main');
-        }}
-      >
-        <img src="/logo.png" alt="NoteFlow Logo" className="logo-icon" />
-        <span className="logo-text">NoteFlow</span>
-        {/* sidebar toggle moved to TopBar; removed inline button here */}
-      </div>
-
-      {/* 새 폴더 & 새 노트 버튼 */}
-      <div className="sidebar-buttons">
-        <button onClick={() => handleNewFolder(null)} className="sidebar-btn">
-          <FaFolderPlus style={{ marginRight: '0.5rem' }} />
-        </button>
-        <button onClick={() => handleNewNote(null)} className="sidebar-btn">
-          <FaStickyNote style={{ marginRight: '0.5rem' }} />
-        </button>
-      </div>
-
-      {/* 필터 및 트리 */}
-      <div className="sidebar-controls">
-        <button
-          className={activeFilter === 'recent' ? 'active' : ''}
+        <div
+          className="sidebar-logo"
+          style={{ cursor: 'pointer' }}
           onClick={() => {
-            setActiveFilter('recent');
-            onFilterChange('recent');
             onSelectFolder?.(null);
             navigate('/main');
           }}
         >
-          최근 노트
-        </button>
+          <img src="/logo.png" alt="NoteFlow Logo" className="logo-icon" />
+          <span className="logo-text">NoteFlow</span>
+        </div>
 
-        <div className="folder-section">
+        <div className="sidebar-buttons">
+          <button onClick={() => handleNewFolder(null)} className="sidebar-btn">
+            <FaFolderPlus style={{ marginRight: '0.5rem' }} />
+          </button>
+          <button onClick={() => handleNewNote(null)} className="sidebar-btn">
+            <FaStickyNote style={{ marginRight: '0.5rem' }} />
+          </button>
+        </div>
+
+        <div className="sidebar-controls">
           <button
-            className={activeFilter === 'all' ? 'active' : ''}
+            className={activeFilter === 'recent' ? 'active' : ''}
             onClick={() => {
-              setActiveFilter('all');
-              onFilterChange('all');
+              setActiveFilter('recent');
+              onFilterChange('recent');
               onSelectFolder?.(null);
               navigate('/main');
             }}
           >
-            내 폴더
+            최근 노트
           </button>
 
-          {activeFilter === 'all' && (
-            <ul className="folder-list">
-              {treeFolders.length === 0 ? (
-                <li style={{ color: '#777', padding: '0.5rem 1rem' }}>
-                  폴더가 없습니다.
-                </li>
-              ) : (
-                renderTree(treeFolders)
-              )}
-
-              {/* 최상위(폴더 없는) 노트 */}
-              {folderNoteMap[null]?.map(note => (
-            <li
-              key={note.id}
-              className={`note-label root ${currentNoteId === note.id ? 'active' : ''}`}
+          <div className="folder-section">
+            <button
+              className={activeFilter === 'all' ? 'active' : ''}
               onClick={() => {
-                navigate(`/notes/${note.id}`);
-                onNoteSelect?.(note); // 현재 노트 객체 전달 (TopBar 호환)
-              }}
-              onContextMenu={e => {
-                e.preventDefault();
-                setFolderContextMenu({ visible: false, x:0, y:0, folderId: null });
-                setNoteContextMenu({ visible: true, x:e.clientX, y:e.clientY, noteId: note.id, folderId: null });
+                setActiveFilter('all');
+                onFilterChange('all');
+                onSelectFolder?.(null);
+                navigate('/main');
               }}
             >
-              {note.title}
-            </li>
-          ))}
+              내 폴더
+            </button>
+
+            {activeFilter === 'all' && (
+              <ul className="folder-list">
+                {treeFolders.length === 0 ? (
+                  <li style={{ color: '#777', padding: '0.5rem 1rem' }}>폴더가 없습니다.</li>
+                ) : (
+                  renderTree(treeFolders)
+                )}
+
+                {folderNoteMap[null]?.map(note => (
+                  <li
+                    key={note.id}
+                    className={`note-label root ${currentNoteId === note.id ? 'active' : ''}`}
+                    onClick={() => {
+                      navigate(`/notes/${note.id}`);
+                      onNoteSelect?.(note);
+                    }}
+                    onContextMenu={e => {
+                      e.preventDefault();
+                      setFolderContextMenu({ visible: false, x:0, y:0, folderId: null });
+                      setNoteContextMenu({ visible: true, x:e.clientX, y:e.clientY, noteId: note.id, folderId: null });
+                    }}
+                  >
+                    {note.title}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <button
+            className={activeFilter === 'favorites' ? 'active' : ''}
+            onClick={() => {
+              setActiveFilter('favorites');
+              onFilterChange('favorites');
+              onSelectFolder?.(null);
+              navigate('/main');
+            }}
+          >
+            즐겨찾기
+          </button>
+
+          {/* ✅ 즐겨찾기 탭에서 즐겨찾기 노트 전체 보여주기 */}
+          {activeFilter === 'favorites' && (
+            <ul className="folder-list">
+              {favoriteNotes.length === 0 ? (
+                <li style={{ color: '#777', padding: '0.5rem 1rem' }}>즐겨찾기한 노트가 없습니다.</li>
+              ) : favoriteNotes.map(n => (
+                <li
+                  key={n.id}
+                  className={`note-label root ${currentNoteId === n.id ? 'active' : ''}`}
+                  onClick={() => {
+                    navigate(`/notes/${n.id}`);
+                    onNoteSelect?.(n);
+                  }}
+                  onContextMenu={e => {
+                    e.preventDefault();
+                    setFolderContextMenu({ visible: false, x:0, y:0, folderId: null });
+                    setNoteContextMenu({ visible: true, x:e.clientX, y:e.clientY, noteId: n.id, folderId: n.folder_id ?? null });
+                  }}
+                >
+                  {/* 폴더명 힌트 */}
+                  <span style={{ display:'flex', justifyContent:'space-between', width:'100%' }}>
+                    <span>{n.title}</span>
+                    <span style={{ color:'#9aa3af', fontSize:12, marginLeft:8 }}>
+                      {(() => {
+                        const ff = flatFolders.find(f => f.id === n.folder_id)
+                        return ff ? ff.name : '루트'
+                      })()}
+                    </span>
+                  </span>
+                </li>
+              ))}
             </ul>
           )}
         </div>
 
-        <button
-          className={activeFilter === 'favorites' ? 'active' : ''}
-          onClick={() => {
-            setActiveFilter('favorites');
-            onFilterChange('favorites');
-            onSelectFolder?.(null);
-            navigate('/main');
-          }}
-        >
-          즐겨찾기
-        </button>
-      </div>
+        {folderContextMenu.visible && (
+          <div
+            className="context-menu"
+            style={{ top: folderContextMenu.y, left: folderContextMenu.x, position: 'fixed', zIndex: 1000 }}
+            ref={contextMenuRef}
+          >
+            <div onClick={() => { handleNewNote(folderContextMenu.folderId); setFolderContextMenu({ visible: false, x:0, y:0, folderId: null }); }}>새 노트</div>
+            <div onClick={() => { handleNewFolder(folderContextMenu.folderId); setFolderContextMenu({ visible: false, x:0, y:0, folderId: null }); }}>새 폴더</div>
+            <div onClick={() => { handleRenameFolder(folderContextMenu.folderId); setFolderContextMenu({ visible: false, x:0, y:0, folderId: null }); }}>이름 변경</div>
+            <div onClick={() => { handleDeleteFolder(folderContextMenu.folderId); setFolderContextMenu({ visible: false, x:0, y:0, folderId: null }); }}>삭제</div>
+          </div>
+        )}
 
-      {/* 컨텍스트 메뉴 (폴더) */}
-      {folderContextMenu.visible && (
-        <div
-          className="context-menu"
-          style={{ top: folderContextMenu.y, left: folderContextMenu.x, position: 'fixed', zIndex: 1000 }}
-          ref={contextMenuRef}
-        >
-          <div onClick={() => {
-              handleNewNote(folderContextMenu.folderId);
-              setFolderContextMenu({ visible: false, x:0, y:0, folderId: null });
-            }}>새 노트</div>
-          <div onClick={() => {
-              handleNewFolder(folderContextMenu.folderId);
-              setFolderContextMenu({ visible: false, x:0, y:0, folderId: null });
-            }}>새 폴더</div>
-          <div onClick={() => {
-              handleRenameFolder(folderContextMenu.folderId);
-              setFolderContextMenu({ visible: false, x:0, y:0, folderId: null });
-            }}>이름 변경</div>
-          <div onClick={() => {
-              handleDeleteFolder(folderContextMenu.folderId);
-              setFolderContextMenu({ visible: false, x:0, y:0, folderId: null });
-            }}>삭제</div>
-        </div>
-      )}
-
-      {/* 컨텍스트 메뉴 (노트) */}
-      {noteContextMenu.visible && (
-        <div
-          className="context-menu"
-          style={{ top: noteContextMenu.y, left: noteContextMenu.x, position: 'fixed', zIndex: 1000 }}
-          ref={contextMenuRef}
-        >
-          <div onClick={() => {
-              handleRenameNote(noteContextMenu.noteId, noteContextMenu.folderId);
-              setNoteContextMenu({ visible: false, x:0, y:0, noteId: null, folderId: null });
-            }}>이름 변경</div>
-          <div onClick={() => {
-              handleDeleteNote(noteContextMenu.noteId);
-              setNoteContextMenu({ visible: false, x:0, y:0, noteId: null, folderId: null });
-            }}>삭제</div>
-        </div>
-      )}
-    </aside>
+        {noteContextMenu.visible && (
+          <div
+            className="context-menu"
+            style={{ top: noteContextMenu.y, left: noteContextMenu.x, position: 'fixed', zIndex: 1000 }}
+            ref={contextMenuRef}
+          >
+            <div onClick={() => { handleRenameNote(noteContextMenu.noteId, noteContextMenu.folderId); setNoteContextMenu({ visible: false, x:0, y:0, noteId: null, folderId: null }); }}>이름 변경</div>
+            <div onClick={() => { handleDeleteNote(noteContextMenu.noteId); setNoteContextMenu({ visible: false, x:0, y:0, noteId: null, folderId: null }); }}>삭제</div>
+          </div>
+        )}
+      </aside>
     </>
   );
 }
