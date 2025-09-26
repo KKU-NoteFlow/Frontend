@@ -11,6 +11,12 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
   const [folderContextMenu, setFolderContextMenu] = useState({ visible: false, x: 0, y: 0, folderId: null });
   const [noteContextMenu, setNoteContextMenu] = useState({ visible: false, x: 0, y: 0, noteId: null, folderId: null });
   const [activeFilter, setActiveFilter] = useState('all'); // 'all' | 'recent' | 'favorites'
+  const [openPanels, setOpenPanels] = useState({
+    recent: activeFilter === 'recent',
+    all: true,
+    favorites: activeFilter === 'favorites'
+  })
+  const [recentNotes, setRecentNotes] = useState([]);
 
   // 드래그 하이라이트 상태
   const [dragOverFolderId, setDragOverFolderId] = useState(null);
@@ -77,7 +83,22 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
   useEffect(() => {
     loadFolders();
     loadNotes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadFolders, loadNotes]);
+
+  useEffect(() => {
+    const fetchRecent = async () => {
+      try {
+        const API = import.meta.env.VITE_API_BASE_URL ?? '';
+        const token = localStorage.getItem('access_token');
+        const res = await fetch(`${API}/api/v1/notes/recent`, { headers: { Authorization: `Bearer ${token}` } });
+        if (!res.ok) return;
+        const data = await res.json();
+        setRecentNotes(Array.isArray(data) ? data : []);
+      } catch (e) { setRecentNotes([]) }
+    }
+    if (activeFilter === 'recent') fetchRecent()
+  }, [activeFilter])
 
   useEffect(() => {
     const tempMap = {};
@@ -621,30 +642,69 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
           <button
             className={activeFilter === 'recent' ? 'active' : ''}
             onClick={() => {
-              setActiveFilter('recent');
-              onFilterChange?.('recent');
-              onSelectFolder?.(null);
-              navigate('/main');
+              setOpenPanels(p => {
+                const willOpen = !p.recent
+                if (willOpen) {
+                  setActiveFilter('recent')
+                  onFilterChange?.('recent')
+                  onSelectFolder?.(null)
+                  navigate('/main')
+                }
+                return { ...p, recent: willOpen }
+              })
             }}
           >
             최근 노트
           </button>
 
+          {openPanels.recent && (
+            <ul className="folder-list">
+              {recentNotes.length === 0 ? (
+                <li style={{ color: '#777', padding: '0.5rem 1rem' }}>최근 노트가 없습니다.</li>
+              ) : recentNotes.map(n => (
+                <li
+                  key={n.id}
+                  className={`note-label root ${currentNoteId === n.id ? 'active' : ''}`}
+                  onClick={() => { navigate(`/notes/${n.id}`); onNoteSelect?.(n); }}
+                  onContextMenu={e => { e.preventDefault(); setFolderContextMenu({ visible: false, x:0, y:0, folderId: null }); setNoteContextMenu({ visible: true, x:e.clientX, y:e.clientY, noteId: n.id, folderId: n.folder_id ?? null }); }}
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData('noteId', String(n.id));
+                    e.dataTransfer.setData('type', 'note');
+                    e.dataTransfer.setData('application/x-nf-note', String(n.id));
+                    e.dataTransfer.setData('text/plain', `nf-note:${n.id}`);
+                    e.dataTransfer.effectAllowed = 'move';
+                  }}
+                >
+                  <span style={{ display:'flex', justifyContent:'space-between', width:'100%' }}>
+                    <span>{n.title}</span>
+                    <span style={{ color:'#9aa3af', fontSize:12, marginLeft:8 }}>{(() => { const ff = flatFolders.find(f => f.id === n.folder_id); return ff ? ff.name : '루트' })()}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+
           <div className="folder-section">
             <div style={{ position: 'relative' }}>
             <button
-              className={activeFilter === 'all' ? 'active' : ''}
+            className={activeFilter === 'all' ? 'active' : ''}
               onClick={() => {
-                setActiveFilter('all');
-                onFilterChange?.('all');
-                onSelectFolder?.(null);
-                navigate('/main');
+                setOpenPanels(p => {
+                  const willOpen = !p.all
+                  if (willOpen) {
+                    setActiveFilter('all')
+                    onFilterChange?.('all')
+                    onSelectFolder?.(null)
+                    navigate('/main')
+                  }
+                  return { ...p, all: willOpen }
+                })
               }}
             >
               내 폴더
             </button>
-
-            {activeFilter === 'all' && (
+            {openPanels.all && (
               <ul className="folder-list">
                 {treeFolders.length === 0 ? (
                   <li style={{ color: '#777', padding: '0.5rem 1rem' }}>폴더가 없습니다.</li>
@@ -690,16 +750,22 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
           <button
             className={activeFilter === 'favorites' ? 'active' : ''}
             onClick={() => {
-              setActiveFilter('favorites');
-              onFilterChange?.('favorites');
-              onSelectFolder?.(null);
-              navigate('/main');
+              setOpenPanels(p => {
+                const willOpen = !p.favorites
+                if (willOpen) {
+                  setActiveFilter('favorites')
+                  onFilterChange?.('favorites')
+                  onSelectFolder?.(null)
+                  navigate('/main')
+                }
+                return { ...p, favorites: willOpen }
+              })
             }}
           >
             즐겨찾기
           </button>
 
-          {activeFilter === 'favorites' && (
+          {openPanels.favorites && (
             <ul className="folder-list">
               {favoriteNotes.length === 0 ? (
                 <li style={{ color: '#777', padding: '0.5rem 1rem' }}>즐겨찾기한 노트가 없습니다.</li>
