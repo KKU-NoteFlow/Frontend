@@ -262,6 +262,8 @@ export default function MainPage() {
 
   const timetableRef = useRef(null)
   const leftColRef = useRef(null)
+  const last30Ref = useRef(null)
+  const [last30Tooltip, setLast30Tooltip] = useState({ visible: false, text: '', x: 0, y: 0 })
 
   useEffect(() => {
     const wrap = () => timetableRef.current
@@ -443,12 +445,57 @@ export default function MainPage() {
                   <Card><ChecklistCard API={API} token={token} /></Card>
                   <Card>
                     <h3 style={{ marginTop: 0 }}>최근 30일 생성 추이</h3>
+                  <div ref={last30Ref} style={{ position: 'relative' }}>
                     <div style={{ display:'grid', gridTemplateColumns: 'repeat(30, 1fr)', gap: 2, alignItems: 'end', height: 80 }}>
-                      {last30.map((d,idx)=> (
-                        <div key={idx} title={`${d.ymd}: ${d.count}`}
-                          style={{ height: `${(d.count/last30Max)*80 || 2}px`, background: 'linear-gradient(180deg, var(--nf-primary), rgba(0,146,63,0.3))', borderRadius: 3 }} />
+                      {last30.map((d, idx) => (
+                        <div
+                          key={idx}
+                          onMouseEnter={(e) => {
+                            try {
+                              const rect = last30Ref.current?.getBoundingClientRect()
+                              const x = rect ? e.clientX - rect.left : 0
+                              const y = rect ? e.clientY - rect.top : 0
+                              const dayIdx = isFinite(new Date(d.ymd).getDay()) ? new Date(d.ymd).getDay() : null
+                              const dayLabel = dayIdx !== null ? dayNames[dayIdx] : ''
+                              setLast30Tooltip({ visible: true, text: `${d.ymd} (${dayLabel}) · ${d.count}개`, x, y })
+                            } catch (err) { /* ignore */ }
+                          }}
+                          onMouseMove={(e) => {
+                            try {
+                              const rect = last30Ref.current?.getBoundingClientRect()
+                              const x = rect ? e.clientX - rect.left : 0
+                              const y = rect ? e.clientY - rect.top : 0
+                              setLast30Tooltip(prev => ({ ...prev, x, y }))
+                            } catch (err) {}
+                          }}
+                          onMouseLeave={() => setLast30Tooltip({ visible: false, text: '', x: 0, y: 0 })}
+                          style={{ height: `${(d.count/last30Max)*80 || 2}px`, background: 'linear-gradient(180deg, var(--nf-primary), rgba(0,146,63,0.3))', borderRadius: 3 }}
+                        />
                       ))}
                     </div>
+
+                    {last30Tooltip.visible && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          left: last30Tooltip.x,
+                          top: last30Tooltip.y,
+                          transform: 'translate(-50%, -120%)',
+                          background: 'rgba(34,51,59,0.94)',
+                          color: '#fff',
+                          padding: '6px 8px',
+                          borderRadius: 6,
+                          fontSize: 12,
+                          pointerEvents: 'none',
+                          whiteSpace: 'nowrap',
+                          boxShadow: '0 6px 18px rgba(10,15,10,0.12)',
+                          zIndex: 60
+                        }}
+                      >
+                        {last30Tooltip.text}
+                      </div>
+                    )}
+                  </div>
                   </Card>
                   <Card>
                     <h3 style={{ margin: '0 0 8px 0' }}>폴더별 노트 수 Top 5</h3>
@@ -481,23 +528,7 @@ export default function MainPage() {
                 </div>
               </div>
 
-              <div className="dashboard-grid__full" style={{ marginTop: 48 }}>
-                {folders.length > 0 ? (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-                    <div style={{ gridColumn: '1 / -1' }}>
-                      <h3 style={{ margin: '24px 0 8px 0' }}>과목별 모아보기</h3>
-                    </div>
-                    {folders.slice(0, 9).map(f => (
-                      <Card key={f.id} style={{ padding: 12, cursor: 'default' }}>
-                        <div style={{ fontWeight: 600, marginBottom: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.name}</div>
-                        <div style={{ color: 'var(--nf-muted)', fontSize: '0.9rem' }}>노트 {notes.filter(n => n.folder_id === f.id).length}개</div>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <p style={{ color: 'var(--nf-muted)' }}>폴더(과목) 데이터가 없습니다.</p>
-                )}
-              </div>
+              {/* '과목별 모아보기' 섹션 제거: 사용자 요청으로 해당 블록을 삭제했습니다. */}
             </>
           )}
 
@@ -566,9 +597,17 @@ export default function MainPage() {
                 ) : (
                   <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                     {files.map((f) => (
-                      <li
+                    <li
                         key={f.file_id}
                         className="main-file-item"
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData('fileId', String(f.file_id));
+                          e.dataTransfer.setData('type', 'file');
+                          e.dataTransfer.setData('application/x-nf-file', String(f.file_id));
+                          e.dataTransfer.setData('text/plain', `nf-file:${f.file_id}`);
+                          e.dataTransfer.effectAllowed = 'move';
+                        }}
                         onClick={() => { window.open(`${API}/api/v1/files/download/${f.file_id}`, '_blank') }}
                         style={{ cursor: 'pointer' }}
                         onMouseEnter={(e) => (e.currentTarget.classList.add('hover'))}

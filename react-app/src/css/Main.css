@@ -196,11 +196,12 @@ margin: 1em 0;
   .dashboard-grid { grid-template-rows: auto auto; align-items: start; }
 
   /* Left column (column 1, row 1) */
-  .dashboard-left-col { display: grid; grid-auto-rows: min-content; gap: 16px; grid-column: 1; grid-row: 1; }
-  .dashboard-left-col > .nf-card { height: auto; min-height: 0; display: flex; flex-direction: column; }
+  .dashboard-left-col { display: grid; grid-auto-rows: min-content; gap: 16px; grid-column: 1; grid-row: 1; align-items: start; }
+  .dashboard-left-col > .nf-card { height: auto; min-height: 0; display: flex; flex-direction: column; align-self: start; }
 
   /* Timetable (column 2, row 1) */
-  .dashboard-timetable-wrap { grid-column: 2; grid-row: 1; align-self: stretch; }
+  /* ensure timetable and left-column cards align to the top of the grid */
+  .dashboard-timetable-wrap { grid-column: 2; grid-row: 1; align-self: start; }
   /* allow timetable content to size the cell; JS may set an explicit
      height on the wrapper, so don't force 100% here which can cause
      unexpected stretching/overflow behaviors */

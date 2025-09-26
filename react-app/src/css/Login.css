@@ -120,6 +120,20 @@
 .welcome-title{ font-size:40px; font-weight:800; color:#27414a; margin:0 0 8px }
 .welcome-sub{ font-size:15px; color:#556b71; max-width:360px }
 
+/* make welcome text scale smoothly but not overlap inputs */
+.welcome-title{ font-size: clamp(22px, 4.5vw, 40px); }
+.welcome-sub{ font-size: clamp(13px, 2.2vw, 15px); }
+
+/* When viewport is narrow, hide the right (welcome) panel so only the login form remains */
+@media (max-width: 720px) {
+  .login-right{ display: none; }
+  .login-left{ width:100%; padding:28px; }
+  .login-card{ height:auto; max-width:680px; }
+  /* let form take more horizontal space on small screens */
+  .form-wrap, .form-wrap .login-form, .form-wrap .login-social-login, .form-wrap .login-signup-text{ width:100%; max-width:520px; padding:0 12px; box-sizing:border-box }
+  .avatar-circle{ margin-left:0 }
+}
+
 .decorative-blob{
   display:none;
 }
