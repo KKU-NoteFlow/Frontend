@@ -1,4 +1,3 @@
-// src/screen/Main.jsx
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate, useOutletContext, useParams } from 'react-router-dom'
 import '@toast-ui/editor/dist/toastui-editor.css';
@@ -11,36 +10,24 @@ import axios from 'axios'
 
 export default function MainPage() {
   const navigate = useNavigate()
-
-  // URL 파라미터 :folderId
   const { folderId } = useParams()
   const parsedFolderId = folderId ? parseInt(folderId, 10) : null
 
-  // Layout에서 내려준 context
-  const {
-    filter,               // 'all' | 'recent' | 'favorites'
-    fileUploadTimestamp,  // 업로드 시마다 갱신되는 timestamp
-  } = useOutletContext()
+  const { filter, fileUploadTimestamp } = useOutletContext()
 
-  // 상태: 노트 목록, 파일 목록, 그리고 폴더명
   const [notes, setNotes]     = useState([])
   const [files, setFiles]     = useState([])
   const [loadingNotes, setLoadingNotes] = useState(false)
   const [loadingFiles, setLoadingFiles] = useState(false)
   const [folders, setFolders] = useState([])
   const [folderName, setFolderName] = useState('')
-
-  // 드래그 오버 상태 (true면 배경색 강조)
   const [isDragOver, setIsDragOver] = useState(false)
 
   const token = localStorage.getItem('access_token')
   const API = import.meta.env.VITE_API_BASE_URL ?? ''
 
-  // ────────────────────────────────────────────────────────────────
-  // Quick Edit modal state
-  // ────────────────────────────────────────────────────────────────
   const [quickOpen, setQuickOpen] = useState(false)
-  const [quickNote, setQuickNote] = useState(null) // selected note object
+  const [quickNote, setQuickNote] = useState(null)
   const [quickTitle, setQuickTitle] = useState('')
   const [quickContent, setQuickContent] = useState('')
   const [quickSaving, setQuickSaving] = useState(false)
@@ -51,10 +38,7 @@ export default function MainPage() {
     setQuickContent(note.content || '')
     setQuickOpen(true)
   }
-  const closeQuick = () => {
-    setQuickOpen(false)
-    setQuickNote(null)
-  }
+  const closeQuick = () => { setQuickOpen(false); setQuickNote(null) }
   const saveQuick = async () => {
     if (!quickNote) return
     setQuickSaving(true)
@@ -81,15 +65,10 @@ export default function MainPage() {
     const form = new FormData()
     form.append('upload_file', file)
     form.append('folder_id', quickNote.folder_id ?? '')
-    const { data } = await axios.post(
-      `${API}/api/v1/files/upload`,
-      form,
-      { headers: { Authorization: `Bearer ${token}` } }
-    )
+    const { data } = await axios.post(`${API}/api/v1/files/upload`, form, { headers: { Authorization: `Bearer ${token}` } })
     return data.url
   }
 
-  // 폴더(과목) 목록 로드 → 과목별 카드에서 사용
   useEffect(() => {
     fetch(`${API}/api/v1/folders`, { headers: { Authorization: `Bearer ${token}` }})
       .then(async (res) => {
@@ -109,41 +88,26 @@ export default function MainPage() {
       })
   }, [API, token])
 
-  // ────────────────────────────────────────────────────────────────
-  // 1) 폴더명 가져오기 (parsedFolderId 변경 시)
-  // ────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!parsedFolderId) {
       setFolderName('')
       return
     }
-    fetch(`${API}/api/v1/folders`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error('폴더 목록 불러오기 실패')
-        return res.json()
-      })
+    fetch(`${API}/api/v1/folders`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((res) => { if (!res.ok) throw new Error('폴더 목록 불러오기 실패'); return res.json() })
       .then((data) => {
         const found = data.find((f) => f.id === parsedFolderId)
         setFolderName(found ? found.name : '')
       })
-      .catch((err) => {
-        console.error('폴더명 가져오기 실패:', err)
-        setFolderName('')
-      })
+      .catch((err) => { console.error('폴더명 가져오기 실패:', err); setFolderName('') })
   }, [parsedFolderId, API, token])
 
-  // ────────────────────────────────────────────────────────────────
-  // 2) 노트 목록 가져오기 (filter, parsedFolderId 변경 시)
-  // ────────────────────────────────────────────────────────────────
+  // 노트 목록 로드 (favorites 포함)
   useEffect(() => {
     if (!parsedFolderId) {
       setLoadingNotes(true)
       let url = filter === 'recent' ? '/api/v1/notes/recent' : '/api/v1/notes'
-      fetch(`${API}${url}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
+      fetch(`${API}${url}`, { headers: { Authorization: `Bearer ${token}` } })
         .then(async (res) => {
           if (res.status === 401) {
             console.warn('[Main] 401 Unauthorized when fetching notes; redirecting to login')
@@ -156,22 +120,17 @@ export default function MainPage() {
         })
         .then((data) => {
           if (filter === 'favorites') {
-            setNotes(data.filter((n) => n.is_favorite))
+            setNotes(data.filter((n) => Boolean(n.is_favorite)))
           } else {
             setNotes(data)
           }
         })
-        .catch((err) => {
-          console.error('노트 불러오기 실패:', err)
-          setNotes([])
-        })
+        .catch((err) => { console.error('노트 불러오기 실패:', err); setNotes([]) })
         .finally(() => setLoadingNotes(false))
       setFiles([])
     } else {
       setLoadingNotes(true)
-      fetch(`${API}/api/v1/notes`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
+      fetch(`${API}/api/v1/notes`, { headers: { Authorization: `Bearer ${token}` } })
         .then(async (res) => {
           if (res.status === 401) {
             console.warn('[Main] 401 Unauthorized when fetching folder notes; redirecting to login')
@@ -186,55 +145,35 @@ export default function MainPage() {
           const filteredNotes = data.filter((n) => n.folder_id === parsedFolderId)
           setNotes(filteredNotes)
         })
-        .catch((err) => {
-          console.error('폴더 내 노트 불러오기 실패:', err)
-          setNotes([])
-        })
+        .catch((err) => { console.error('폴더 내 노트 불러오기 실패:', err); setNotes([]) })
         .finally(() => setLoadingNotes(false))
     }
   }, [filter, parsedFolderId, API, token])
 
-  // ────────────────────────────────────────────────────────────────
-  // 3) 파일 목록 가져오기 (parsedFolderId, fileUploadTimestamp 변경 시)
-  // ────────────────────────────────────────────────────────────────
   const fetchFiles = useCallback(() => {
     if (parsedFolderId !== null) {
       setLoadingFiles(true)
-      fetch(`${API}/api/v1/files/list/${parsedFolderId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-        .then((res) => {
-          if (!res.ok) throw new Error('파일 목록 불러오기 실패')
-          return res.json()
-        })
-        .then((data) => {
-          setFiles(data)
-        })
-        .catch((err) => {
-          console.error('폴더 내 파일 목록 불러오기 실패:', err)
-          setFiles([])
-        })
+      fetch(`${API}/api/v1/files/list/${parsedFolderId}`, { headers: { Authorization: `Bearer ${token}` } })
+        .then((res) => { if (!res.ok) throw new Error('파일 목록 불러오기 실패'); return res.json() })
+        .then((data) => { setFiles(data) })
+        .catch((err) => { console.error('폴더 내 파일 목록 불러오기 실패:', err); setFiles([]) })
         .finally(() => setLoadingFiles(false))
     } else {
       setFiles([])
     }
   }, [parsedFolderId, API, token])
 
-  useEffect(() => {
-    fetchFiles()
-  }, [fetchFiles, fileUploadTimestamp])
+  useEffect(() => { fetchFiles() }, [fetchFiles, fileUploadTimestamp])
 
-  // OCR로 새 노트 생성 시, 새로고침 없이 목록을 즉시 갱신
   useEffect(() => {
     const handler = () => {
-      // 기존 목록 패치 로직 재사용
       if (!parsedFolderId) {
         setLoadingNotes(true)
         let url = filter === 'recent' ? '/api/v1/notes/recent' : '/api/v1/notes'
         fetch(`${API}${url}`, { headers: { Authorization: `Bearer ${token}` }})
           .then(res => (res.ok ? res.json() : []))
           .then((data) => {
-            if (filter === 'favorites') setNotes(data.filter(n=>n.is_favorite))
+            if (filter === 'favorites') setNotes(data.filter(n=>Boolean(n.is_favorite)))
             else setNotes(data)
           })
           .finally(() => setLoadingNotes(false))
@@ -250,49 +189,27 @@ export default function MainPage() {
     return () => window.removeEventListener('nf:notes-refresh', handler)
   }, [API, token, parsedFolderId, filter])
 
-  // ────────────────────────────────────────────────────────────────
-  // 4) 드래그 앤 드롭: 파일 드롭 이벤트 처리 + 시각 피드백
-  // ────────────────────────────────────────────────────────────────
-  const handleDragOver = (e) => {
-    e.preventDefault()
-  }
-
-  const handleDragEnter = (e) => {
-    e.preventDefault()
-    setIsDragOver(true)
-  }
-
-  const handleDragLeave = (e) => {
-    e.preventDefault()
-    setIsDragOver(false)
-  }
+  const handleDragOver = (e) => { e.preventDefault() }
+  const handleDragEnter = (e) => { e.preventDefault(); setIsDragOver(true) }
+  const handleDragLeave = (e) => { e.preventDefault(); setIsDragOver(false) }
 
   const handleFileDrop = async (e) => {
     e.preventDefault()
     setIsDragOver(false)
-
     if (parsedFolderId === null) {
       alert('먼저 업로드할 폴더를 선택하세요.')
       return
     }
-
     const droppedFiles = e.dataTransfer.files
     if (!droppedFiles || droppedFiles.length === 0) return
-
     for (let i = 0; i < droppedFiles.length; i++) {
       const file = droppedFiles[i]
       const formData = new FormData()
       formData.append('upload_file', file)
       formData.append('folder_id', parsedFolderId)
-
       console.log(`[handleFileDrop] 파일 업로드 요청 → "${file.name}" → 폴더 ${parsedFolderId}`)
-
       try {
-        const res = await fetch(`${API}/api/v1/files/upload`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
-          body: formData
-        })
+        const res = await fetch(`${API}/api/v1/files/upload`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: formData })
         if (!res.ok) {
           console.error(`[handleFileDrop] 업로드 실패: "${file.name}"`, res.status, await res.text())
         } else {
@@ -302,14 +219,9 @@ export default function MainPage() {
         console.error(`[handleFileDrop] 예외 발생: "${file.name}"`, err)
       }
     }
-
-    // 업로드 완료 후 즉시 목록 갱신
     fetchFiles()
   }
 
-  // ────────────────────────────────────────────────────────────────
-  // 5) 화면 렌더링: 폴더 선택 여부에 따라 노트 & 파일 분리 표시
-  // ────────────────────────────────────────────────────────────────
   const now = Date.now()
   const weekMs = 7 * 24 * 60 * 60 * 1000
   const weeklyNotes = notes.filter(n => {
@@ -319,7 +231,6 @@ export default function MainPage() {
   const weekRate = notes.length ? Math.min(100, Math.round((weeklyNotes.length / notes.length) * 100)) : 0
   const recentNotes = [...notes].sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).slice(0,6)
 
-  // 대시보드용 지표
   const dayNames = ['일','월','화','수','목','금','토']
   const dayCounts = (() => {
     const arr = new Array(7).fill(0)
@@ -349,7 +260,6 @@ export default function MainPage() {
     return arr.slice(0,5)
   })()
 
-  // refs for left column and timetable wrapper so we can set timetable height to match left column
   const timetableRef = useRef(null)
   const leftColRef = useRef(null)
 
@@ -357,25 +267,15 @@ export default function MainPage() {
     const wrap = () => timetableRef.current
     const left = () => leftColRef.current || document.querySelector('.dashboard-left-col')
     if (!wrap()) return
-
     const setHeight = (h) => {
       const w = wrap()
       if (!w) return
       if (window.innerWidth <= 900) {
         w.style.height = 'auto'
       } else {
-        // Compute inner timetable content height (includes absolutely
-        // positioned items). If the content spills beyond the left column
-        // height, expand the wrapper so following content is pushed below
-        // the visual bottom of the timetable.
         try {
           const inner = w.querySelector('.timetable-wrap')
           let innerH = inner ? inner.getBoundingClientRect().height : 0
-
-          // Absolutely-positioned timetable items do NOT affect the
-          // parent's bounding box. Find the bottom-most descendant and
-          // include it in the computed height so the wrapper fully
-          // contains visible timetable content.
           if (inner) {
             const ib = inner.getBoundingClientRect()
             let maxBottom = ib.height
@@ -387,7 +287,6 @@ export default function MainPage() {
             })
             innerH = Math.max(innerH, maxBottom)
           }
-
           const target = Math.max(h || 0, innerH || 0)
           w.style.height = target ? `${Math.round(target)}px` : 'auto'
         } catch (err) {
@@ -395,23 +294,14 @@ export default function MainPage() {
         }
       }
     }
-
-    // use ResizeObserver to react to content/size changes of the left column
     const ro = new (window.ResizeObserver || function(){})(entries => {
-      for (const entry of entries) {
-        setHeight(entry.contentRect.height)
-      }
+      for (const entry of entries) { setHeight(entry.contentRect.height) }
     })
     const leftEl = left()
     if (leftEl && ro.observe) ro.observe(leftEl)
-
-    // also adjust on window resize
     const onResize = () => setHeight(left() ? left().getBoundingClientRect().height : 0)
     window.addEventListener('resize', onResize)
-
-    // initial set
     setHeight(leftEl ? leftEl.getBoundingClientRect().height : 0)
-
     return () => {
       if (leftEl && ro.unobserve) ro.unobserve(leftEl)
       window.removeEventListener('resize', onResize)
@@ -432,232 +322,274 @@ export default function MainPage() {
     } catch {}
   }
 
+  // ========================= RENDER =========================
   return (
     <>
     <main className="main-content nf-container" style={{ paddingTop: 'var(--nf-space-4)' }}>
-      {/* 퀵 액션 리본 제거: 상단 ActionToolbar로 대체 */}
-      {/* ──────────────────────────────────────────────────────────────── */}
-      {/* 5-1) parsedFolderId가 null → 전체/최근/즐겨찾기 노트만 표시 */}
-      {/* ──────────────────────────────────────────────────────────────── */}
-      {parsedFolderId === null && (
-        <>
-        <div className="dashboard-grid" style={{ marginBottom: 16 }}>
-          <div className="dashboard-left-col" ref={leftColRef} style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
-            {/* Checklist: 이번주 비중 자리에 체크리스트 표시 */}
-            <Card>
-              <ChecklistCard API={API} token={token} />
-            </Card>
+      {/* ✅ 즐겨찾기 보기: 대시보드 대신 "콤팩트 카드 그리드" */}
+      {parsedFolderId === null && filter === 'favorites' ? (
+        <section aria-live="polite">
+          <h2 style={{ margin: '0 0 12px 2px' }}>즐겨찾기 노트</h2>
 
-            {/* 최근 30일 생성 추이 */}
-            <Card>
-              <h3 style={{ marginTop: 0 }}>최근 30일 생성 추이</h3>
-              <div style={{ display:'grid', gridTemplateColumns: 'repeat(30, 1fr)', gap: 2, alignItems: 'end', height: 80 }}>
-                {last30.map((d,idx)=> (
-                  <div key={idx} title={`${d.ymd}: ${d.count}`}
-                    style={{ height: `${(d.count/last30Max)*80 || 2}px`, background: 'linear-gradient(180deg, var(--nf-primary), rgba(0,146,63,0.3))', borderRadius: 3 }} />
-                ))}
-              </div>
-            </Card>
-
-            {/* 제거: 요일 요약 */}
-            {/* 폴더별 노트 수 Top 5 (moved into left column) */}
-            <Card>
-              <h3 style={{ margin: '0 0 8px 0' }}>폴더별 노트 수 Top 5</h3>
-              <div style={{ display:'grid', gap:8 }}>
-                {folderTop5.length === 0 && <div style={{ color:'var(--nf-muted)' }}>데이터가 없습니다.</div>}
-                {folderTop5.map((f, idx) => {
-                  const label = f.key === '루트'
-                    ? '루트'
-                    : (folders.find(ff => ff.id === f.key)?.name || `폴더 #${f.key}`)
-                  const pct = Math.round((f.count / Math.max(1, folderTop5[0]?.count || 1)) * 100)
-                  return (
-                    <div key={idx} style={{ display:'grid', gap:6 }}>
-                      <div style={{ display:'flex', justifyContent:'space-between', color:'var(--nf-muted)' }}>
-                        <span>{label}</span><span>{f.count}개</span>
-                      </div>
-                      <div className="nf-progress" aria-label={label}>
-                        <div className="nf-progress__bar" style={{ width: `${pct}%` }} />
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </Card>
-          </div>
-          {/* 요일별 그래프 (제거) — 시간표를 오른쪽 빈 공간에 배치 */}
-          <div className="dashboard-timetable-wrap" ref={el => timetableRef.current = el} style={{ minWidth: 260 }}>
-            <DashboardTimetable className="dashboard-timetable" />
-          </div>
-        </div>
-
-        {/* 과목별 모아보기(폴더 기준) - 그리드 외부로 이동해서 항상 시간표 아래에 렌더되도록 함 */}
-        <div className="dashboard-grid__full" style={{ marginTop: 48 }}>
-          {folders.length > 0 ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-              <div style={{ gridColumn: '1 / -1' }}>
-                <h3 style={{ margin: '24px 0 8px 0' }}>과목별 모아보기</h3>
-              </div>
-              {folders.slice(0, 9).map(f => (
-                <Card key={f.id} style={{ padding: 12, cursor: 'default' }}>
-                  <div style={{ fontWeight: 600, marginBottom: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.name}</div>
-                  <div style={{ color: 'var(--nf-muted)', fontSize: '0.9rem' }}>노트 {notes.filter(n => n.folder_id === f.id).length}개</div>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <p style={{ color: 'var(--nf-muted)' }}>폴더(과목) 데이터가 없습니다.</p>
-          )}
-        </div>
-          {/* 최근 노트 섹션 제거 (요청에 따라 텍스트 대신 차트 중심 구성) */}
-        {false && (
-        <section className="main-note-list" aria-live="polite">
-          {loadingNotes && (
+          {loadingNotes ? (
             <>
               <Skeleton height={72} style={{ marginBottom: 12 }} />
               <Skeleton height={72} style={{ marginBottom: 12 }} />
-              <Skeleton height={72} style={{ marginBottom: 12 }} />
+            </>
+          ) : notes.length === 0 ? (
+            <EmptyState title="즐겨찾기한 노트가 없습니다" />
+          ) : (
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+                gap: 12
+              }}
+            >
+              {notes.map((note) => {
+                const preview = (note.content || '')
+                  .replace(/<[^>]*>/g, '') // html 제거
+                  .replace(/\s+/g, ' ')
+                  .trim()
+                  .slice(0, 160)
+
+                return (
+                  <Card
+                    key={note.id}
+                    className="nf-card"
+                    style={{
+                      padding: 12,
+                      display: 'grid',
+                      gridTemplateRows: 'auto 1fr auto',
+                      gap: 8,
+                      cursor: 'pointer'
+                    }}
+                    onClick={() => navigate(`/notes/${note.id}`)}
+                    onDoubleClick={(e) => { e.preventDefault(); openQuick(note) }}
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData('noteId', note.id)
+                      e.dataTransfer.setData('type', 'note')
+                    }}
+                  >
+                    {/* 헤더 */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                      <h3
+                        className="main-note-title"
+                        style={{
+                          margin: 0,
+                          fontSize: '1rem',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          maxWidth: '75%'
+                        }}
+                      >
+                        {note.title}
+                      </h3>
+                      <button
+                        className="nf-btn"
+                        onClick={(e) => { e.stopPropagation(); toggleFavoriteQuick(note) }}
+                        title={note.is_favorite ? '즐겨찾기 해제' : '즐겨찾기'}
+                        style={{ padding: '4px 8px', fontSize: 12 }}
+                        aria-label={note.is_favorite ? '즐겨찾기 해제' : '즐겨찾기'}
+                      >
+                        {note.is_favorite ? '★' : '☆'}
+                      </button>
+                    </div>
+
+                    {/* 본문 프리뷰 */}
+                    <p
+                      className="main-note-preview"
+                      style={{
+                        margin: 0,
+                        color: 'var(--nf-muted)',
+                        fontSize: '.95rem',
+                        lineHeight: 1.45,
+                        maxHeight: 84,
+                        overflow: 'hidden',
+                        whiteSpace: 'pre-wrap'
+                      }}
+                    >
+                      {preview}
+                    </p>
+
+                    {/* 푸터 메타 */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                      <button
+                        className="nf-btn"
+                        style={{ padding: '4px 8px', fontSize: 12 }}
+                        onClick={(e) => { e.stopPropagation(); openQuick(note) }}
+                      >
+                        빠른 편집
+                      </button>
+                      <span className="main-note-date" style={{ color: 'var(--nf-muted)', fontSize: '.9rem' }}>
+                        {new Date(note.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </Card>
+                )
+              })}
+            </div>
+          )}
+        </section>
+      ) : (
+        // ===== 기존 대시보드/폴더 화면 유지 =====
+        <>
+          {parsedFolderId === null && (
+            <>
+              <div className="dashboard-grid" style={{ marginBottom: 16 }}>
+                <div className="dashboard-left-col" ref={leftColRef} style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
+                  <Card><ChecklistCard API={API} token={token} /></Card>
+                  <Card>
+                    <h3 style={{ marginTop: 0 }}>최근 30일 생성 추이</h3>
+                    <div style={{ display:'grid', gridTemplateColumns: 'repeat(30, 1fr)', gap: 2, alignItems: 'end', height: 80 }}>
+                      {last30.map((d,idx)=> (
+                        <div key={idx} title={`${d.ymd}: ${d.count}`}
+                          style={{ height: `${(d.count/last30Max)*80 || 2}px`, background: 'linear-gradient(180deg, var(--nf-primary), rgba(0,146,63,0.3))', borderRadius: 3 }} />
+                      ))}
+                    </div>
+                  </Card>
+                  <Card>
+                    <h3 style={{ margin: '0 0 8px 0' }}>폴더별 노트 수 Top 5</h3>
+                    <div style={{ display:'grid', gap:8 }}>
+                      {(() => {
+                        const list = folderTop5
+                        if (list.length === 0) return <div style={{ color:'var(--nf-muted)' }}>데이터가 없습니다.</div>
+                        return list.map((f, idx) => {
+                          const label = f.key === '루트'
+                            ? '루트'
+                            : (folders.find(ff => ff.id === f.key)?.name || `폴더 #${f.key}`)
+                          const pct = Math.round((f.count / Math.max(1, folderTop5[0]?.count || 1)) * 100)
+                          return (
+                            <div key={idx} style={{ display:'grid', gap:6 }}>
+                              <div style={{ display:'flex', justifyContent:'space-between', color:'var(--nf-muted)' }}>
+                                <span>{label}</span><span>{f.count}개</span>
+                              </div>
+                              <div className="nf-progress" aria-label={label}>
+                                <div className="nf-progress__bar" style={{ width: `${pct}%` }} />
+                              </div>
+                            </div>
+                          )
+                        })
+                      })()}
+                    </div>
+                  </Card>
+                </div>
+                <div className="dashboard-timetable-wrap" ref={el => timetableRef.current = el} style={{ minWidth: 260 }}>
+                  <DashboardTimetable className="dashboard-timetable" />
+                </div>
+              </div>
+
+              <div className="dashboard-grid__full" style={{ marginTop: 48 }}>
+                {folders.length > 0 ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <h3 style={{ margin: '24px 0 8px 0' }}>과목별 모아보기</h3>
+                    </div>
+                    {folders.slice(0, 9).map(f => (
+                      <Card key={f.id} style={{ padding: 12, cursor: 'default' }}>
+                        <div style={{ fontWeight: 600, marginBottom: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.name}</div>
+                        <div style={{ color: 'var(--nf-muted)', fontSize: '0.9rem' }}>노트 {notes.filter(n => n.folder_id === f.id).length}개</div>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{ color: 'var(--nf-muted)' }}>폴더(과목) 데이터가 없습니다.</p>
+                )}
+              </div>
             </>
           )}
-          {!loadingNotes && notes.length === 0 && (
-            <EmptyState title="표시할 노트가 없습니다" description="새 노트를 작성하거나 파일을 업로드해 보세요." action={<button className="nf-btn nf-btn--primary" onClick={() => navigate('/notes/new')}>새 노트</button>} />
+
+          {parsedFolderId !== null && (
+            <>
+              <h2 style={{ fontSize: '1.5rem', marginBottom: '0.75rem' }}>
+                {folderName || `폴더 #${parsedFolderId}`}
+              </h2>
+
+              <section className="main-note-list" aria-live="polite">
+                {loadingNotes ? (
+                  <>
+                    <Skeleton height={72} style={{ marginBottom: 12 }} />
+                    <Skeleton height={72} style={{ marginBottom: 12 }} />
+                  </>
+                ) : notes.length === 0 ? (
+                  <EmptyState title="이 폴더에는 노트가 없습니다" action={<button className="nf-btn nf-btn--primary" onClick={() => navigate('/notes/new')}>새 노트</button>} />
+                ) : (
+                  notes.map((note) => (
+                    <Card
+                      key={note.id}
+                      className="main-note-item nf-card"
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData('noteId', note.id)
+                        e.dataTransfer.setData('type', 'note')
+                      }}
+                      onClick={() => navigate(`/notes/${note.id}`)}
+                      onDoubleClick={(e) => { e.preventDefault(); openQuick(note) }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                        <h3 className="main-note-title">{note.title}</h3>
+                        <button
+                          className="nf-btn"
+                          style={{ padding: '4px 8px', fontSize: 12 }}
+                          onClick={(e) => { e.stopPropagation(); openQuick(note) }}
+                        >
+                          빠른 편집
+                        </button>
+                      </div>
+                      <p className="main-note-preview">{note.content?.slice(0, 100) || ''}</p>
+                      <span className="main-note-date">{new Date(note.created_at).toLocaleDateString()}</span>
+                    </Card>
+                  ))
+                )}
+              </section>
+
+              <hr style={{ margin: '1.5rem 0', borderColor: '#ddd' }} />
+
+              <h3 style={{ marginBottom: '0.5rem' }}>업로드된 파일 ({files.length})</h3>
+              <section
+                className={`main-file-list ${isDragOver ? 'drag-over' : ''}`}
+                onDragEnter={handleDragEnter}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleFileDrop}
+                style={{ minHeight: '150px' }}
+              >
+                {loadingFiles ? (
+                  <>
+                    <Skeleton height={48} style={{ marginBottom: 8 }} />
+                    <Skeleton height={48} style={{ marginBottom: 8 }} />
+                  </>
+                ) : files.length === 0 ? (
+                  <EmptyState title="업로드된 파일이 없습니다" description="파일을 드래그&드롭해 업로드할 수 있습니다." />
+                ) : (
+                  <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                    {files.map((f) => (
+                      <li
+                        key={f.file_id}
+                        className="main-file-item"
+                        onClick={() => { window.open(`${API}/api/v1/files/download/${f.file_id}`, '_blank') }}
+                        style={{ cursor: 'pointer' }}
+                        onMouseEnter={(e) => (e.currentTarget.classList.add('hover'))}
+                        onMouseLeave={(e) => (e.currentTarget.classList.remove('hover'))}
+                      >
+                        <div className="main-file-icon"></div>
+                        <div className="main-file-meta">
+                          <span className="main-file-name">{f.original_name}</span>
+                          <span className="main-file-date">{new Date(f.created_at).toLocaleDateString()}</span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            </>
           )}
-          {!loadingNotes && notes.map((note) => (
-            <Card
-              key={note.id}
-              className="main-note-item nf-card"
-              draggable
-              onDragStart={(e) => {
-                e.dataTransfer.setData('noteId', note.id)
-                e.dataTransfer.setData('type', 'note')
-              }}
-              onClick={() => navigate(`/notes/${note.id}`)}
-            >
-              <h3 className="main-note-title">{note.title}</h3>
-              <p className="main-note-preview">
-                {note.content?.slice(0, 100) || ''}
-              </p>
-              <span className="main-note-date">
-                {new Date(note.created_at).toLocaleDateString()}
-              </span>
-            </Card>
-          ))}
-        </section>
-        )}
-        </>
-      )}
-
-      {/* ──────────────────────────────────────────────────────────────── */}
-      {/* 5-2) parsedFolderId가 숫자 → 해당 폴더 ID 내 노트 & 파일 표시 */}
-      {/* ──────────────────────────────────────────────────────────────── */}
-      {parsedFolderId !== null && (
-        <>
-          {/* 5-2-1) 헤더 */}
-          <h2 style={{ fontSize: '1.5rem', marginBottom: '0.75rem' }}>
-            {folderName || `폴더 #${parsedFolderId}`}
-          </h2>
-
-          {/* 5-2-2) 폴더 내 노트 섹션 */}
-          <section className="main-note-list" aria-live="polite">
-            {loadingNotes && (
-              <>
-                <Skeleton height={72} style={{ marginBottom: 12 }} />
-                <Skeleton height={72} style={{ marginBottom: 12 }} />
-              </>
-            )}
-            {!loadingNotes && notes.length === 0 ? (
-              <EmptyState title="이 폴더에는 노트가 없습니다" action={<button className="nf-btn nf-btn--primary" onClick={() => navigate('/notes/new')}>새 노트</button>} />
-            ) : (
-              !loadingNotes && notes.map((note) => (
-                <Card
-                  key={note.id}
-                  className="main-note-item nf-card"
-                  draggable
-                  onDragStart={(e) => {
-                    e.dataTransfer.setData('noteId', note.id)
-                    e.dataTransfer.setData('type', 'note')
-                  }}
-                  onClick={() => navigate(`/notes/${note.id}`)}
-                  onDoubleClick={(e) => { e.preventDefault(); openQuick(note) }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-                  <h3 className="main-note-title">{note.title}</h3>
-                  <button
-                    className="nf-btn"
-                    style={{ padding: '4px 8px', fontSize: 12 }}
-                    onClick={(e) => { e.stopPropagation(); openQuick(note) }}
-                  >
-                    빠른 편집
-                  </button>
-                  </div>
-                  <p className="main-note-preview">
-                    {note.content?.slice(0, 100) || ''}
-                  </p>
-                  <span className="main-note-date">
-                    {new Date(note.created_at).toLocaleDateString()}
-                  </span>
-                </Card>
-              ))
-            )}
-          </section>
-
-          {/* 5-2-3) 구분선 */}
-          <hr style={{ margin: '1.5rem 0', borderColor: '#ddd' }} />
-
-          {/* 5-2-4) 폴더 내 파일 섹션 (드래그 앤 드롭 허용) */}
-          <h3 style={{ marginBottom: '0.5rem' }}>업로드된 파일 ({files.length})</h3>
-          <section
-            className={`main-file-list ${
-              isDragOver ? 'drag-over' : ''
-            }`}
-            onDragEnter={handleDragEnter}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleFileDrop}
-            style={{ minHeight: '150px' }}
-          >
-            {loadingFiles ? (
-              <>
-                <Skeleton height={48} style={{ marginBottom: 8 }} />
-                <Skeleton height={48} style={{ marginBottom: 8 }} />
-              </>
-            ) : files.length === 0 ? (
-              <EmptyState title="업로드된 파일이 없습니다" description="파일을 드래그&드롭해 업로드할 수 있습니다." />
-            ) : (
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                {files.map((f) => (
-                  <li
-                    key={f.file_id}
-                    className="main-file-item"
-                    onClick={() => {
-                      // 클릭 시 미리보기/다운로드 (새 탭)
-                      window.open(
-                        `${API}/api/v1/files/download/${f.file_id}`,
-                        '_blank'
-                      )
-                    }}
-                    style={{ cursor: 'pointer' }}
-                    onMouseEnter={(e) => (e.currentTarget.classList.add('hover'))}
-                    onMouseLeave={(e) => (e.currentTarget.classList.remove('hover'))}
-                  >
-                    {/* 간단한 파일 아이콘 */}
-                    <div className="main-file-icon">{/* file */}</div>
-                    <div className="main-file-meta">
-                      <span className="main-file-name">{f.original_name}</span>
-                      <span className="main-file-date">{new Date(f.created_at).toLocaleDateString()}</span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {/*
-              <div style={{ textAlign: 'center', color: '#999', marginTop: '1rem' }}>
-                파일을 이 영역으로 드래그 앤 드롭하면 바로 업로드됩니다.
-              </div>
-            */}
-          </section>
         </>
       )}
     </main>
+
     {/* Quick Edit Modal */}
     <Modal open={quickOpen} onClose={closeQuick} title="빠른 편집">
       {quickNote && (
