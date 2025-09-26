@@ -97,31 +97,47 @@ export default function Layout() {
           if (res.isFinal) finalText = res[0].transcript
           else interimText = res[0].transcript
         }
-        if (finalText) {
-          if (typeof onSttInsert === 'function') {
-            try { onSttInsert(finalText) } catch (e) { console.error('onSttInsert failed', e) }
-          } else {
-            setStatusText((s) => (s ? (s + '\n' + finalText) : finalText))
+        // avoid duplicate inserts across recognition restarts
+        try {
+          recog._lastInsertedFinal = recog._lastInsertedFinal || ''
+          if (finalText && finalText !== recog._lastInsertedFinal) {
+            if (typeof onSttInsert === 'function') {
+              try { onSttInsert(finalText) } catch (e) { /* ignore */ }
+            } else {
+              setStatusText((s) => (s ? (s + '\n' + finalText) : finalText))
+            }
+            recog._lastInsertedFinal = finalText
           }
-        }
+        } catch (e) {}
         if (typeof onSttInterimInsert === 'function') {
           try { onSttInterimInsert(interimText) } catch (e) { console.error('onSttInterimInsert failed', e) }
         }
       }
 
       recog.onerror = (e) => {
-        console.error('speech recognition error', e)
-        setStatusText('음성 인식 오류')
-        setToast({ open: true, message: '음성 인식 오류', variant: 'error' })
-        setIsRecording(false)
+        // stop on fatal errors
+        if (e && (e.error === 'not-allowed' || e.error === 'service-not-allowed')) {
+          try { setIsRecording(false) } catch {}
+        }
       }
 
+      // auto-restart when browser ends recognition (common ~5min limit)
       recog.onend = () => {
-        setIsRecording(false)
-        setOpProgress({ visible: false, label: '', value: 0 })
-        setStatusText('녹음 종료')
+        // if user still intends to record, restart after short delay
+        if (speechRecognitionRef.current && speechRecognitionRef.current._shouldListen) {
+          try {
+            setTimeout(() => {
+              try { speechRecognitionRef.current.start() } catch (e) {}
+            }, 500)
+          } catch (e) {}
+        } else {
+          setIsRecording(false)
+          setOpProgress({ visible: false, label: '', value: 0 })
+          setStatusText('녹음 종료')
+        }
       }
 
+      recog._shouldListen = true
       speechRecognitionRef.current = recog
       try {
         recog.start()

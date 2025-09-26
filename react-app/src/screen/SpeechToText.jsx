@@ -23,6 +23,8 @@ export default function SpeechToText() {
     recog.interimResults = true
     recog.lang = 'ko-KR'
 
+    // keep finalized text on the recognition instance to avoid duplicates across restarts
+    recog.finalRef = ''
     recog.onresult = (ev) => {
       let finalText = ''
       let interimText = ''
@@ -31,21 +33,40 @@ export default function SpeechToText() {
         if (res.isFinal) finalText += res[0].transcript
         else interimText += res[0].transcript
       }
-      setTranscript((t) => {
-        // show final + interim
-        const base = t.replace(/\n?\n?$/, '')
-        return base + (finalText || interimText)
-      })
+      if (finalText) {
+        recog.finalRef = (recog.finalRef || '') + finalText
+      }
+      // show finalized text plus current interim
+      setTranscript((recog.finalRef || '') + (interimText || ''))
+    }
+
+    // When recognition ends unexpectedly (e.g. browser-imposed time limit),
+    // automatically restart if we are still in listening mode so recording
+    // can continue past vendor limits (Chrome often stops ~5 minutes).
+    recog.onend = () => {
+      // if listening flag is true, try to restart after a short pause
+      if (recognitionRef.current && recognitionRef.current._shouldListen) {
+        try {
+          // slight delay to avoid rapid restart loops
+          setTimeout(() => {
+            try { recognitionRef.current.start() } catch (e) {}
+          }, 500)
+        } catch (e) {}
+      }
     }
 
     recog.onerror = (e) => {
       console.error('speech recognition error', e)
       // stop on fatal errors
       if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+        recog._shouldListen = false
         setListening(false)
       }
     }
 
+    // put recognition instance into ref
+    recog._shouldListen = false
+    recog.finalRef = recog.finalRef || ''
     recognitionRef.current = recog
     return () => {
       try { recog.stop() } catch {}
@@ -55,17 +76,19 @@ export default function SpeechToText() {
   const start = async () => {
     if (!recognitionRef.current) return
     try {
+      recognitionRef.current._shouldListen = true
+      // preserve finalRef so long recordings accumulate across restarts
+      try { recognitionRef.current.finalRef = recognitionRef.current.finalRef || '' } catch {}
       recognitionRef.current.start()
       setListening(true)
-      setTranscript('')
     } catch (e) {
-      console.error('start err', e)
     }
   }
 
   const stop = () => {
     if (!recognitionRef.current) return
     try {
+      recognitionRef.current._shouldListen = false
       recognitionRef.current.stop()
     } catch (e) {}
     setListening(false)
@@ -119,4 +142,3 @@ export default function SpeechToText() {
     </div>
   )
 }
-
