@@ -1,4 +1,4 @@
-import { FaFolderPlus, FaStickyNote, FaTimes } from 'react-icons/fa';
+import { FaFolderPlus, FaStickyNote } from 'react-icons/fa';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import '../css/Sidebar.css';
@@ -11,6 +11,9 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
   const [folderContextMenu, setFolderContextMenu] = useState({ visible: false, x: 0, y: 0, folderId: null });
   const [noteContextMenu, setNoteContextMenu] = useState({ visible: false, x: 0, y: 0, noteId: null, folderId: null });
   const [activeFilter, setActiveFilter] = useState('all'); // 'all' | 'recent' | 'favorites'
+
+  // 드래그 하이라이트 상태
+  const [dragOverFolderId, setDragOverFolderId] = useState(null);
 
   const navigate = useNavigate();
   const contextMenuRef = useRef(null);
@@ -95,17 +98,34 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
     setTreeFolders(roots);
   }, [flatFolders, folderNoteMap]);
 
+  // ── Drag & Drop 유틸 ─────────────────────────────────────────────
+  const getDraggedNoteId = (dt) => {
+    if (!dt) return null;
+    // 1) 커스텀 타입
+    const custom = dt.getData('application/x-nf-note');
+    if (custom) return custom;
+    // 2) 기존 키
+    const legacy = dt.getData('noteId');
+    if (legacy) return legacy;
+    // 3) 텍스트 기반 fallback (Firefox 등)
+    const plain = dt.getData('text/plain') || dt.getData('Text') || '';
+    // 형식: "nf-note:<id>"
+    const m = /^nf-note:(\d+|\w+)$/.exec(plain.trim());
+    if (m) return m[1];
+    return null;
+  };
+
   const handleDrop = async (e, targetFolderId) => {
     e.preventDefault();
+    setDragOverFolderId(null);
+
     const API = import.meta.env.VITE_API_BASE_URL ?? '';
     const token = localStorage.getItem('access_token');
-    const dataType = e.dataTransfer.getData('type');
-    const droppedNoteId = e.dataTransfer.getData('noteId');
-    const droppedFolderId = e.dataTransfer.getData('folderId');
-    const droppedFiles = e.dataTransfer.files;
 
+    // 파일 DnD 업로드
+    const droppedFiles = e.dataTransfer.files;
     if (droppedFiles?.length) {
-      let lastCreatedNote = null
+      let lastCreatedNote = null;
       for (let i = 0; i < droppedFiles.length; i++) {
         const file = droppedFiles[i];
         const formData = new FormData();
@@ -119,17 +139,17 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
           });
           if (!res.ok) {
             console.error(`[handleDrop] 파일 업로드 실패: ${file.name}`, res.status);
-            continue
+            continue;
           }
-          let uploaded = null
-          try { uploaded = await res.json() } catch (e) { uploaded = null }
+          let uploaded = null;
+          try { uploaded = await res.json(); } catch (e) { uploaded = null; }
           if (uploaded && uploaded.url) {
             try {
               const noteBody = {
                 title: uploaded.original_name || file.name || '첨부된 파일',
                 content: `![${(uploaded.original_name||file.name).replace(/"/g,'')}](${uploaded.url})`,
                 folder_id: targetFolderId,
-              }
+              };
               const noteRes = await fetch(`${API}/api/v1/notes`, {
                 method: 'POST',
                 headers: {
@@ -137,15 +157,15 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
                   Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify(noteBody),
-              })
+              });
               if (noteRes.ok) {
-                const created = await noteRes.json()
-                lastCreatedNote = created
+                const created = await noteRes.json();
+                lastCreatedNote = created;
               } else {
-                console.error('[handleDrop] 업로드 후 노트 생성 실패', await noteRes.text())
+                console.error('[handleDrop] 업로드 후 노트 생성 실패', await noteRes.text());
               }
             } catch (e) {
-              console.error('[handleDrop] 업로드 후 노트 생성 중 예외', e)
+              console.error('[handleDrop] 업로드 후 노트 생성 중 예외', e);
             }
           }
         } catch (err) {
@@ -153,46 +173,38 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
         }
       }
       await loadNotes();
-      onFilterChange('all');
+      onFilterChange?.('all');
       if (lastCreatedNote) {
         try {
-          navigate(`/notes/${lastCreatedNote.id}`)
-          onNoteSelect?.(lastCreatedNote)
-        } catch (e) {}
+          navigate(`/notes/${lastCreatedNote.id}`);
+          onNoteSelect?.(lastCreatedNote);
+        } catch {}
       }
       return;
     }
 
-    if (dataType === 'note' && droppedNoteId) {
+    // 노트 이동
+    const droppedNoteId = getDraggedNoteId(e.dataTransfer);
+    if (droppedNoteId) {
       try {
         const res = await fetch(`${API}/api/v1/notes/${droppedNoteId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ folder_id: targetFolderId }),
         });
-        if (!res.ok) console.error('[handleDrop] 노트 이동 실패', res.status);
-        await loadNotes();
-        onFilterChange('all');
+        if (!res.ok) {
+          console.error('[handleDrop] 노트 이동 실패', res.status, await res.text());
+        } else {
+          // 폴더 재로딩 및 필터/화면 동기화
+          await loadNotes();
+          onFilterChange?.('all');
+          // 이동한 폴더 열어주기
+          if (targetFolderId != null) {
+            setOpenMap(p => ({ ...p, [targetFolderId]: true }));
+          }
+        }
       } catch (err) {
         console.error('[handleDrop] 노트 이동 중 예외:', err);
-      }
-      return;
-    }
-
-    if (dataType === 'folder' && droppedFolderId) {
-      const dfId = parseInt(droppedFolderId, 10);
-      const tfId = targetFolderId;
-      if (dfId === tfId || isDescendant(dfId, tfId)) return;
-      try {
-        const res = await fetch(`${API}/api/v1/folders/${dfId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ parent_id: tfId }),
-        });
-        if (!res.ok) console.error('[handleDrop] 폴더 이동 실패', res.status);
-        await loadFolders();
-      } catch (err) {
-        console.error('[handleDrop] 폴더 이동 중 예외:', err);
       }
       return;
     }
@@ -231,7 +243,7 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
       if (!res.ok) throw new Error('폴더 생성 실패');
       await loadFolders();
       setActiveFilter('all');
-      onFilterChange('all');
+      onFilterChange?.('all');
       if (parentId !== null) setOpenMap(p => ({ ...p, [parentId]: true }));
     } catch (err) {
       console.error('[handleNewFolder]', err);
@@ -341,19 +353,32 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  // 폴더 트리 렌더
   const renderTree = nodes =>
     nodes.map(node => (
       <li
         key={node.id}
-        onDrop={e => handleDrop(e, node.id)}
-        onDragOver={e => e.preventDefault()}
+        onDrop={(e) => handleDrop(e, node.id)}
+        onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
+        onDragEnter={() => setDragOverFolderId(node.id)}
+        onDragLeave={(e) => {
+          // 폴더 영역 바깥으로 나가면 해제
+          if (!e.currentTarget.contains(e.relatedTarget)) setDragOverFolderId(null);
+        }}
+        style={{
+          outline: dragOverFolderId === node.id ? '2px dashed var(--nf-primary)' : 'none',
+          borderRadius: 6,
+          paddingInline: dragOverFolderId === node.id ? 2 : 0
+        }}
       >
         <div
           className={`folder-label ${currentFolderId === node.id ? 'active' : ''}`}
           draggable
           onDragStart={e => {
-            e.dataTransfer.setData('folderId', node.id);
+            e.dataTransfer.setData('folderId', String(node.id));
             e.dataTransfer.setData('type', 'folder');
+            e.dataTransfer.setData('text/plain', `nf-folder:${node.id}`);
+            e.dataTransfer.effectAllowed = 'move';
           }}
           onClick={() => {
             setOpenMap(p => ({ ...p, [node.id]: !p[node.id] }));
@@ -363,6 +388,9 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
             setNoteContextMenu({ visible: false, x:0, y:0, noteId: null, folderId: null });
             setFolderContextMenu({ visible: true, x:e.clientX, y:e.clientY, folderId: node.id });
           }}
+          // 폴더 라벨 자체에도 드롭 허용(모바일/트랙패드 정확도 보완)
+          onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDragOverFolderId(node.id); }}
+          onDrop={(e) => handleDrop(e, node.id)}
         >
           <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{node.name}</span>
@@ -388,6 +416,15 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
                   e.preventDefault();
                   setFolderContextMenu({ visible: false, x:0, y:0, folderId: null });
                   setNoteContextMenu({ visible: true, x:e.clientX, y:e.clientY, noteId: n.id, folderId: node.id });
+                }}
+                draggable
+                onDragStart={(e) => {
+                  // 노트 드래그 시작: 여러 포맷으로 심어 호환성 보장
+                  e.dataTransfer.setData('noteId', String(n.id));
+                  e.dataTransfer.setData('type', 'note');
+                  e.dataTransfer.setData('application/x-nf-note', String(n.id));
+                  e.dataTransfer.setData('text/plain', `nf-note:${n.id}`);
+                  e.dataTransfer.effectAllowed = 'move';
                 }}
               >
                 {n.title}
@@ -428,15 +465,12 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
     Object.values(folderNoteMap).forEach(list => {
       (list || []).forEach(n => { if (Boolean(n.is_favorite)) arr.push(n) })
     })
-    // 루트(null) 키에 없는 경우 대비
     if (folderNoteMap[null]) {
       folderNoteMap[null].forEach(n => { if (Boolean(n.is_favorite)) arr.push(n) })
     }
-    // 중복 제거
     const seen = new Set()
     const uniq = []
     arr.forEach(n => { if (!seen.has(n.id)) { seen.add(n.id); uniq.push(n) } })
-    // 최신순
     uniq.sort((a,b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at))
     return uniq
   }, [folderNoteMap])
@@ -455,8 +489,8 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
       <aside
         className={`sidebar ${isTemporary ? 'temporary' : sidebarState === 'pinned' ? 'pinned' : 'hidden'}`}
         onMouseLeave={() => { if (isTemporary) setShowOnHover(false) }}
-        onDragOver={e => e.preventDefault()}
-        onDrop={e => handleDrop(e, currentFolderId ?? null)}
+        onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
+        onDrop={(e) => handleDrop(e, currentFolderId ?? null)}  // 빈 영역 드롭 → 현재 폴더/루트로 이동
       >
         <div
           className="sidebar-logo"
@@ -484,7 +518,7 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
             className={activeFilter === 'recent' ? 'active' : ''}
             onClick={() => {
               setActiveFilter('recent');
-              onFilterChange('recent');
+              onFilterChange?.('recent');
               onSelectFolder?.(null);
               navigate('/main');
             }}
@@ -497,7 +531,7 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
               className={activeFilter === 'all' ? 'active' : ''}
               onClick={() => {
                 setActiveFilter('all');
-                onFilterChange('all');
+                onFilterChange?.('all');
                 onSelectFolder?.(null);
                 navigate('/main');
               }}
@@ -526,6 +560,14 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
                       setFolderContextMenu({ visible: false, x:0, y:0, folderId: null });
                       setNoteContextMenu({ visible: true, x:e.clientX, y:e.clientY, noteId: note.id, folderId: null });
                     }}
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData('noteId', String(note.id));
+                      e.dataTransfer.setData('type', 'note');
+                      e.dataTransfer.setData('application/x-nf-note', String(note.id));
+                      e.dataTransfer.setData('text/plain', `nf-note:${note.id}`);
+                      e.dataTransfer.effectAllowed = 'move';
+                    }}
                   >
                     {note.title}
                   </li>
@@ -538,7 +580,7 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
             className={activeFilter === 'favorites' ? 'active' : ''}
             onClick={() => {
               setActiveFilter('favorites');
-              onFilterChange('favorites');
+              onFilterChange?.('favorites');
               onSelectFolder?.(null);
               navigate('/main');
             }}
@@ -546,7 +588,6 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
             즐겨찾기
           </button>
 
-          {/* ✅ 즐겨찾기 탭에서 즐겨찾기 노트 전체 보여주기 */}
           {activeFilter === 'favorites' && (
             <ul className="folder-list">
               {favoriteNotes.length === 0 ? (
@@ -564,8 +605,15 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
                     setFolderContextMenu({ visible: false, x:0, y:0, folderId: null });
                     setNoteContextMenu({ visible: true, x:e.clientX, y:e.clientY, noteId: n.id, folderId: n.folder_id ?? null });
                   }}
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData('noteId', String(n.id));
+                    e.dataTransfer.setData('type', 'note');
+                    e.dataTransfer.setData('application/x-nf-note', String(n.id));
+                    e.dataTransfer.setData('text/plain', `nf-note:${n.id}`);
+                    e.dataTransfer.effectAllowed = 'move';
+                  }}
                 >
-                  {/* 폴더명 힌트 */}
                   <span style={{ display:'flex', justifyContent:'space-between', width:'100%' }}>
                     <span>{n.title}</span>
                     <span style={{ color:'#9aa3af', fontSize:12, marginLeft:8 }}>
