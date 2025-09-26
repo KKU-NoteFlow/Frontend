@@ -229,3 +229,18 @@
 .note-list.nested {
   padding-left: 1.8rem;  /* 하위 폴더용 */
 }
+
+/* 루트 드롭 오버레이: 폴더 섹션 전체를 경계로 강조하고 안내 텍스트 표시 */
+.sidebar-root-drop-overlay {
+  position: absolute;
+  inset: 0 0 0 0;
+  border: 2px dashed rgba(47,158,68,0.9);
+  border-radius: 12px;
+  background: rgba(47,158,68,0.03);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 40;
+}
+/* no inline text for root overlay; only visual border */

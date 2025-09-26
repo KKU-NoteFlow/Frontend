@@ -14,6 +14,7 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
 
   // 드래그 하이라이트 상태
   const [dragOverFolderId, setDragOverFolderId] = useState(null);
+  const [dragOverRoot, setDragOverRoot] = useState(false);
 
   const navigate = useNavigate();
   const contextMenuRef = useRef(null);
@@ -30,7 +31,6 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
-        console.error('[loadFolders] 실패 →', res.status, await res.text());
         return;
       }
       const data = await res.json();
@@ -49,7 +49,6 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
       data.forEach(root => traverse(root));
       setFlatFolders(flattenList);
     } catch (err) {
-      console.error('[loadFolders] 예외 →', err);
     }
   }, []);
 
@@ -61,7 +60,6 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
-        console.error('[loadNotes] 실패 →', res.status, await res.text());
         return;
       }
       const notes = await res.json();
@@ -73,7 +71,6 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
       });
       setFolderNoteMap(map);
     } catch (err) {
-      console.error('[loadNotes] 예외 →', err);
     }
   }, []);
 
@@ -115,9 +112,34 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
     return null;
   };
 
+  const getDraggedFolderId = (dt) => {
+    if (!dt) return null;
+    const legacy = dt.getData('folderId');
+    if (legacy) return legacy;
+    const plain = dt.getData('text/plain') || dt.getData('Text') || '';
+    const m = /^nf-folder:(\d+|\w+)$/.exec(plain.trim());
+    if (m) return m[1];
+    return null;
+  };
+
+  const getDraggedFileId = (dt) => {
+    if (!dt) return null;
+    const custom = dt.getData('application/x-nf-file');
+    if (custom) return custom;
+    const legacy = dt.getData('fileId') || dt.getData('file_id');
+    if (legacy) return legacy;
+    const plain = dt.getData('text/plain') || dt.getData('Text') || '';
+    const m = /^nf-file:(\d+|\w+)$/.exec(plain.trim());
+    if (m) return m[1];
+    return null;
+  };
+
   const handleDrop = async (e, targetFolderId) => {
     e.preventDefault();
     setDragOverFolderId(null);
+
+    // normalize targetFolderId: accept numbers or string ids; treat 'null'/'""' as null
+    const normalizedTarget = (targetFolderId == null || targetFolderId === 'null' || targetFolderId === '') ? null : Number(targetFolderId)
 
     const API = import.meta.env.VITE_API_BASE_URL ?? '';
     const token = localStorage.getItem('access_token');
@@ -138,7 +160,6 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
             body: formData,
           });
           if (!res.ok) {
-            console.error(`[handleDrop] 파일 업로드 실패: ${file.name}`, res.status);
             continue;
           }
           let uploaded = null;
@@ -162,14 +183,11 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
                 const created = await noteRes.json();
                 lastCreatedNote = created;
               } else {
-                console.error('[handleDrop] 업로드 후 노트 생성 실패', await noteRes.text());
               }
             } catch (e) {
-              console.error('[handleDrop] 업로드 후 노트 생성 중 예외', e);
             }
           }
         } catch (err) {
-          console.error(`[handleDrop] 파일 업로드 중 예외: ${file.name}`, err);
         }
       }
       await loadNotes();
@@ -183,18 +201,94 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
       return;
     }
 
+    // 폴더 이동
+    const droppedFolderId = getDraggedFolderId(e.dataTransfer);
+    if (droppedFolderId) {
+      // prevent dropping into itself or its descendant
+      const di = Number(droppedFolderId)
+      const ti = normalizedTarget == null ? null : Number(normalizedTarget)
+      if (di === ti || (ti !== null && isDescendant(di, ti))) {
+        // ignore invalid move
+      } else {
+        try {
+          // 루트로 이동할 때는 parent_id를 명시적으로 null로 보내도록 변경
+          const body = normalizedTarget == null ? JSON.stringify({ parent_id: null }) : JSON.stringify({ parent_id: normalizedTarget })
+          const url = `${API}/api/v1/folders/${droppedFolderId}`
+          const res = await fetch(url, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body,
+          });
+          const text = await res.text().catch(() => '')
+          let parsed = null
+          try { parsed = JSON.parse(text || '{}') } catch (e) { parsed = null }
+          if (!res.ok) {
+          } else {
+            // 서버가 실제로 parent_id를 반영했는지 확인
+            const returnedParent = parsed && Object.prototype.hasOwnProperty.call(parsed, 'parent_id') ? parsed.parent_id : undefined
+            if (targetFolderId == null) {
+              if (returnedParent !== null) {
+                // 서버가 parent_id=null을 반영하지 않음 — 경고만 로그에 남김
+                
+              }
+            } else {
+              if (returnedParent !== undefined && Number(returnedParent) !== Number(targetFolderId)) {
+                
+              }
+            }
+            await loadFolders();
+            onFilterChange?.('all');
+            if (targetFolderId != null) setOpenMap(p => ({ ...p, [targetFolderId]: true }));
+          }
+        } catch (err) {
+        }
+      }
+      return;
+    }
+
     // 노트 이동
     const droppedNoteId = getDraggedNoteId(e.dataTransfer);
+    // 파일 이동
+    const droppedFileId = getDraggedFileId(e.dataTransfer);
+    if (droppedFileId) {
+      try {
+        const body = normalizedTarget == null ? JSON.stringify({ folder_id: null }) : JSON.stringify({ folder_id: normalizedTarget })
+        const url = `${API}/api/v1/files/${droppedFileId}`
+        await fetch(url, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body })
+        await loadNotes();
+        onFilterChange?.('all');
+        return;
+      } catch (err) {
+        // ignore client-side
+        return;
+      }
+    }
+
     if (droppedNoteId) {
       try {
-        const res = await fetch(`${API}/api/v1/notes/${droppedNoteId}`, {
+        // 루트로 이동할 때는 folder_id를 명시적으로 null로 보내도록 변경
+        const body = normalizedTarget == null ? JSON.stringify({ folder_id: null }) : JSON.stringify({ folder_id: normalizedTarget })
+        const url = `${API}/api/v1/notes/${droppedNoteId}`
+        const res = await fetch(url, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ folder_id: targetFolderId }),
+          body,
         });
+        const text = await res.text().catch(() => '')
+        let parsedNote = null
+        try { parsedNote = JSON.parse(text || '{}') } catch (e) { parsedNote = null }
         if (!res.ok) {
-          console.error('[handleDrop] 노트 이동 실패', res.status, await res.text());
         } else {
+          const returnedFolder = parsedNote && Object.prototype.hasOwnProperty.call(parsedNote, 'folder_id') ? parsedNote.folder_id : undefined
+          if (targetFolderId == null) {
+            if (returnedFolder !== null) {
+              
+            }
+          } else {
+            if (returnedFolder !== undefined && Number(returnedFolder) !== Number(targetFolderId)) {
+              
+            }
+          }
           // 폴더 재로딩 및 필터/화면 동기화
           await loadNotes();
           onFilterChange?.('all');
@@ -204,7 +298,6 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
           }
         }
       } catch (err) {
-        console.error('[handleDrop] 노트 이동 중 예외:', err);
       }
       return;
     }
@@ -246,7 +339,6 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
       onFilterChange?.('all');
       if (parentId !== null) setOpenMap(p => ({ ...p, [parentId]: true }));
     } catch (err) {
-      console.error('[handleNewFolder]', err);
       alert('폴더 생성에 실패했습니다.');
     }
   };
@@ -265,7 +357,6 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
       if (!res.ok) throw new Error('노트 생성 실패');
       await loadNotes();
     } catch (err) {
-      console.error('[handleNewNote]', err);
       alert('노트 생성에 실패했습니다.');
     }
   };
@@ -284,7 +375,6 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
       if (!res.ok) throw new Error('폴더 이름 변경 실패');
       await loadFolders();
     } catch (err) {
-      console.error('[handleRenameFolder]', err);
       alert('폴더 이름 변경에 실패했습니다.');
     }
   };
@@ -303,7 +393,6 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
       if (!res.ok) throw new Error('노트 이름 변경 실패');
       await loadNotes();
     } catch (err) {
-      console.error('[handleRenameNote]', err);
       alert('노트 이름 변경에 실패했습니다.');
     }
   };
@@ -320,7 +409,6 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
       if (!res.ok) throw new Error('폴더 삭제 실패');
       await loadFolders();
     } catch (err) {
-      console.error('[handleDeleteFolder]', err);
       alert('폴더 삭제에 실패했습니다.');
     }
   };
@@ -337,7 +425,6 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
       if (!res.ok) throw new Error('노트 삭제 실패');
       await loadNotes();
     } catch (err) {
-      console.error('[handleDeleteNote]', err);
       alert('노트 삭제에 실패했습니다.');
     }
   };
@@ -360,7 +447,7 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
         key={node.id}
         onDrop={(e) => handleDrop(e, node.id)}
         onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
-        onDragEnter={() => setDragOverFolderId(node.id)}
+        onDragEnter={() => { setDragOverFolderId(node.id); setDragOverRoot(false); }}
         onDragLeave={(e) => {
           // 폴더 영역 바깥으로 나가면 해제
           if (!e.currentTarget.contains(e.relatedTarget)) setDragOverFolderId(null);
@@ -389,9 +476,9 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
             setFolderContextMenu({ visible: true, x:e.clientX, y:e.clientY, folderId: node.id });
           }}
           // 폴더 라벨 자체에도 드롭 허용(모바일/트랙패드 정확도 보완)
-          onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDragOverFolderId(node.id); }}
-          onDrop={(e) => handleDrop(e, node.id)}
-        >
+        onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDragOverFolderId(node.id); setDragOverRoot(false); }}
+        onDrop={(e) => handleDrop(e, node.id)}
+      >
           <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{node.name}</span>
             <span className="nf-badge" aria-label="노트 개수">{node.notes?.length || 0}</span>
@@ -432,6 +519,7 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
             ))}
           </ul>
         )}
+        
       </li>
     ));
 
@@ -489,8 +577,24 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
       <aside
         className={`sidebar ${isTemporary ? 'temporary' : sidebarState === 'pinned' ? 'pinned' : 'hidden'}`}
         onMouseLeave={() => { if (isTemporary) setShowOnHover(false) }}
-        onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
-        onDrop={(e) => handleDrop(e, currentFolderId ?? null)}  // 빈 영역 드롭 → 현재 폴더/루트로 이동
+        onDragEnter={(e) => {
+          e.preventDefault();
+          // only show root overlay when not over any folder element
+          try {
+            const el = e.target && e.target.closest ? e.target.closest('.folder-label, .folder-list, .folder-children') : null;
+            setDragOverRoot(!el && true);
+          } catch (err) { setDragOverRoot(true) }
+        }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          try {
+            const el = e.target && e.target.closest ? e.target.closest('.folder-label, .folder-list, .folder-children') : null;
+            setDragOverRoot(!el && true);
+          } catch (err) { setDragOverRoot(true) }
+        }}
+        onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setDragOverRoot(false); }}
+        onDrop={(e) => { setDragOverRoot(false); handleDrop(e, null); }}  // 빈 영역 드롭 → 최상위(루트)로 이동
       >
         <div
           className="sidebar-logo"
@@ -527,6 +631,7 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
           </button>
 
           <div className="folder-section">
+            <div style={{ position: 'relative' }}>
             <button
               className={activeFilter === 'all' ? 'active' : ''}
               onClick={() => {
@@ -574,6 +679,12 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
                 ))}
               </ul>
             )}
+
+            {/* 루트로 드롭할 때 전체 폴더 영역 바운더리를 보여주는 오버레이 */}
+            {dragOverRoot && (
+              <div className="sidebar-root-drop-overlay" aria-hidden />
+            )}
+            </div>
           </div>
 
           <button
