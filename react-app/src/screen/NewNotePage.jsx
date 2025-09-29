@@ -22,7 +22,10 @@ export default function NewNotePage() {
           body: JSON.stringify({ title, content })
         }
       )
-      if (res.ok) navigate('/main')
+      if (res.ok) {
+        try { window.dispatchEvent(new Event('nf:notes-refresh')) } catch {}
+        navigate('/main')
+      }
       else {
         const { detail } = await res.json()
         alert(detail || '노트 생성 실패')

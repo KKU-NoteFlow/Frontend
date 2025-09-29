@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import '../css/Bottombar.css'
 import { IconMic, IconUpload, IconTextRecognition } from '../ui/icons'
 
-export default function BottomBar({ isRecording, statusText, onRecordClick, onSummarizeClick, onUploadClick, onOcrClick }) {
+export default function BottomBar({ isRecording, statusText, onRecordClick, onSummarizeClick, onUploadClick, onOcrClick, onGenerateClick }) {
   const [open, setOpen] = useState(false)
   const toggle = () => setOpen(o => !o)
 
@@ -23,6 +23,12 @@ export default function BottomBar({ isRecording, statusText, onRecordClick, onSu
           <span className="fab-ai">AI</span>
           <span className="fab-label">요약</span>
         </button>
+        <button className="fab-action fab-extra" title="문제 생성" aria-label="문제 생성" onClick={() => { setOpen(false); onGenerateClick && onGenerateClick() }}>
+          <span style={{ fontSize: 20 }}>+</span>
+          <span className="fab-label">문제 생성</span>
+        </button>
+        
+
         <button
           className={`fab-action fab-record ${isRecording ? 'recording' : ''}`}
           onClick={() => { setOpen(false); onRecordClick && onRecordClick() }}
@@ -32,7 +38,6 @@ export default function BottomBar({ isRecording, statusText, onRecordClick, onSu
           <IconMic />
           <span className="fab-label">{isRecording ? '중지' : '녹음'}</span>
         </button>
-
         <button className="fab-main" onClick={toggle} aria-label={open ? '닫기' : '작업 열기'}>
           {open ? '×' : '+'}
         </button>

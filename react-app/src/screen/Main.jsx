@@ -31,6 +31,7 @@ export default function MainPage() {
   const [quickTitle, setQuickTitle] = useState('')
   const [quickContent, setQuickContent] = useState('')
   const [quickSaving, setQuickSaving] = useState(false)
+  const [filePreviewUrl, setFilePreviewUrl] = useState(null)
 
   const openQuick = (note) => {
     setQuickNote(note)
@@ -608,7 +609,13 @@ export default function MainPage() {
                           e.dataTransfer.setData('text/plain', `nf-file:${f.file_id}`);
                           e.dataTransfer.effectAllowed = 'move';
                         }}
-                        onClick={() => { window.open(`${API}/api/v1/files/download/${f.file_id}`, '_blank') }}
+                        onClick={() => {
+                          if (f.content_type && f.content_type.startsWith('image')) {
+                            setFilePreviewUrl(`${API}/api/v1/files/download/${f.file_id}`)
+                          } else {
+                            window.open(`${API}/api/v1/files/download/${f.file_id}`, '_blank')
+                          }
+                        }}
                         style={{ cursor: 'pointer' }}
                         onMouseEnter={(e) => (e.currentTarget.classList.add('hover'))}
                         onMouseLeave={(e) => (e.currentTarget.classList.remove('hover'))}
@@ -655,6 +662,13 @@ export default function MainPage() {
         </div>
       )}
     </Modal>
+    {filePreviewUrl && (
+      <div className="file-preview-overlay" onClick={() => setFilePreviewUrl(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:120 }}>
+        <div style={{ maxWidth:'90%', maxHeight:'90%' }} onClick={e=>e.stopPropagation()}>
+          <img src={filePreviewUrl} alt="preview" style={{ maxWidth:'100%', maxHeight:'100%', borderRadius:8 }} />
+        </div>
+      </div>
+    )}
     </>
   )
 }

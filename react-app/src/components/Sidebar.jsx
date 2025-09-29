@@ -14,9 +14,11 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
   const [openPanels, setOpenPanels] = useState({
     recent: activeFilter === 'recent',
     all: true,
-    favorites: activeFilter === 'favorites'
+    favorites: activeFilter === 'favorites',
+    predicted: false
   })
   const [recentNotes, setRecentNotes] = useState([]);
+  const [predictedItems, setPredictedItems] = useState([]);
 
   // 드래그 하이라이트 상태
   const [dragOverFolderId, setDragOverFolderId] = useState(null);
@@ -83,8 +85,12 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
   useEffect(() => {
     loadFolders();
     loadNotes();
+    const handler = () => { loadFolders(); loadNotes(); }
+    window.addEventListener('nf:notes-refresh', handler)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadFolders, loadNotes]);
+    }, [loadFolders, loadNotes]);
+    
+    // NOTE: single listener is registered above in the same effect with cleanup
 
   useEffect(() => {
     const fetchRecent = async () => {
@@ -99,6 +105,23 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
     }
     if (activeFilter === 'recent') fetchRecent()
   }, [activeFilter])
+
+  useEffect(() => {
+    const fetchPredicted = async () => {
+      try {
+        const API = import.meta.env.VITE_API_BASE_URL ?? '';
+        const token = localStorage.getItem('access_token');
+        const res = await fetch(`${API}/api/v1/notes/predicted`, { headers: { Authorization: `Bearer ${token}` } });
+        if (!res.ok) {
+          setPredictedItems([])
+          return
+        }
+        const data = await res.json();
+        setPredictedItems(Array.isArray(data) ? data : [])
+      } catch (e) { setPredictedItems([]) }
+    }
+    if (openPanels.predicted) fetchPredicted()
+  }, [openPanels.predicted])
 
   useEffect(() => {
     const tempMap = {};
@@ -364,6 +387,8 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
     }
   };
 
+
+
   const handleNewNote = async folderId => {
     const title = prompt('노트 제목을 입력하세요');
     if (!title) return;
@@ -621,7 +646,9 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
           className="sidebar-logo"
           style={{ cursor: 'pointer' }}
           onClick={() => {
+            // go to dashboard: clear folder selection, reset filter to default (all) and navigate
             onSelectFolder?.(null);
+            onFilterChange?.('all');
             navigate('/main');
           }}
         >
@@ -642,16 +669,14 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
           <button
             className={activeFilter === 'recent' ? 'active' : ''}
             onClick={() => {
-              setOpenPanels(p => {
-                const willOpen = !p.recent
-                if (willOpen) {
-                  setActiveFilter('recent')
-                  onFilterChange?.('recent')
-                  onSelectFolder?.(null)
-                  navigate('/main')
-                }
-                return { ...p, recent: willOpen }
-              })
+              const willOpen = !openPanels.recent;
+              if (willOpen) {
+                setActiveFilter('recent');
+                onFilterChange?.('recent');
+                onSelectFolder?.(null);
+                navigate('/main');
+              }
+              setOpenPanels(p => ({ ...p, recent: willOpen }));
             }}
           >
             최근 노트
@@ -685,21 +710,21 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
             </ul>
           )}
 
+          
+
           <div className="folder-section">
             <div style={{ position: 'relative' }}>
             <button
             className={activeFilter === 'all' ? 'active' : ''}
               onClick={() => {
-                setOpenPanels(p => {
-                  const willOpen = !p.all
-                  if (willOpen) {
-                    setActiveFilter('all')
-                    onFilterChange?.('all')
-                    onSelectFolder?.(null)
-                    navigate('/main')
-                  }
-                  return { ...p, all: willOpen }
-                })
+                const willOpen = !openPanels.all;
+                if (willOpen) {
+                  setActiveFilter('all');
+                  onFilterChange?.('all');
+                  onSelectFolder?.(null);
+                  navigate('/main');
+                }
+                setOpenPanels(p => ({ ...p, all: willOpen }));
               }}
             >
               내 폴더
@@ -750,16 +775,14 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
           <button
             className={activeFilter === 'favorites' ? 'active' : ''}
             onClick={() => {
-              setOpenPanels(p => {
-                const willOpen = !p.favorites
-                if (willOpen) {
-                  setActiveFilter('favorites')
-                  onFilterChange?.('favorites')
-                  onSelectFolder?.(null)
-                  navigate('/main')
-                }
-                return { ...p, favorites: willOpen }
-              })
+              const willOpen = !openPanels.favorites;
+              if (willOpen) {
+                setActiveFilter('favorites');
+                onFilterChange?.('favorites');
+                onSelectFolder?.(null);
+                navigate('/main');
+              }
+              setOpenPanels(p => ({ ...p, favorites: willOpen }));
             }}
           >
             즐겨찾기
@@ -800,6 +823,40 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
                       })()}
                     </span>
                   </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* 예상문제: 즐겨찾기 아래에 위치 */}
+        <div>
+          <button
+            className={`sidebar-controls__predicted ${openPanels.predicted ? 'active' : ''}`}
+            onClick={() => setOpenPanels(p => ({ ...p, predicted: !p.predicted }))}
+          >
+            예상문제
+          </button>
+
+          {openPanels.predicted && (
+            <ul className="folder-list">
+              {predictedItems.length === 0 ? (
+                <li style={{ color: '#777', padding: '0.5rem 1rem' }}>예상문제가 없습니다.</li>
+              ) : predictedItems.map(item => (
+                <li
+                  key={item.id}
+                  className={`note-label root ${currentNoteId === item.id ? 'active' : ''}`}
+                  onClick={() => { navigate(`/notes/${item.id}`); onNoteSelect?.(item); }}
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData('noteId', String(item.id));
+                    e.dataTransfer.setData('type', 'note');
+                    e.dataTransfer.setData('application/x-nf-note', String(item.id));
+                    e.dataTransfer.setData('text/plain', `nf-note:${item.id}`);
+                    e.dataTransfer.effectAllowed = 'move';
+                  }}
+                >
+                  {item.title}
                 </li>
               ))}
             </ul>

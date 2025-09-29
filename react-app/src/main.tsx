@@ -1,4 +1,8 @@
 import './index.css';
+import installFetchLogger from './utils/installFetchLogger';
+
+// install global fetch + error logger to help with debugging network issues
+try { installFetchLogger() } catch (e) { console.error('installFetchLogger failed', e) }
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
