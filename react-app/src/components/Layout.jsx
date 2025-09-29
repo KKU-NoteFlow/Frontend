@@ -192,6 +192,41 @@ export default function Layout() {
     }
   }
 
+  const handleGenerateQuiz = async () => {
+    if (!currentNote) return
+    const API = import.meta.env.VITE_API_BASE_URL ?? ''
+    const token = localStorage.getItem('access_token')
+    try {
+      const res = await fetch(`${API}/api/v1/notes/${currentNote.id}/generate-quiz`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) {
+        let body = ''
+        try { body = await res.text() } catch {}
+        console.error('[Layout] generate-quiz failed', res.status, body)
+        alert('예상 문제 생성에 실패했습니다.')
+        return
+      }
+      const created = await res.json()
+      // created is expected to be a list of NoteResponse; open the first one if present
+      if (Array.isArray(created) && created.length > 0) {
+        const first = created[0]
+        try { window.dispatchEvent(new Event('nf:notes-refresh')) } catch (e) {}
+        setCurrentNote(first)
+        navigate(`/notes/${first.id}`)
+        setToast({ open: true, message: '예상 문제가 생성되었습니다.', variant: 'success' })
+      } else {
+        alert('예상 문제가 생성되었지만 반환된 데이터가 비어있습니다.')
+      }
+    } catch (err) {
+      console.error('[Layout] generate-quiz exception', err)
+      alert('예상 문제 생성 중 오류가 발생했습니다.')
+    }
+  }
+
+  
+
   const toggleFavorite = async () => {
     if (!currentNote) return
     const API = import.meta.env.VITE_API_BASE_URL ?? ''
@@ -293,16 +328,33 @@ export default function Layout() {
           body: formData,
         })
         if (!res.ok) {
-          console.error(
-            `[Layout] 파일 업로드 실패: "${file.name}"`,
-            res.status,
-            await res.text()
-          )
           setToast({ open: true, message: `업로드 실패: ${file.name}`, variant: 'error' })
         } else {
-          console.log(`[Layout] 파일 업로드 성공: "${file.name}"`)
+          // parse uploaded file info
+          let uploaded = null
+          try { uploaded = await res.json() } catch(e) { uploaded = null }
           setToast({ open: true, message: `업로드 성공: ${file.name}`, variant: 'success' })
           try { localStorage.setItem('nf-last-upload-folder', String(folderIdToUpload)) } catch {}
+
+          // If server returned a file url, create a note containing the image (to match drag-n-drop behavior)
+          try {
+            const fileUrl = uploaded && (uploaded.url || uploaded.file_url || uploaded.file_url)
+            if (fileUrl) {
+              const noteBody = {
+                title: uploaded.original_name || file.name || '첨부된 파일',
+                content: `![${(uploaded.original_name||file.name).replace(/"/g,'')}](${fileUrl})`,
+                folder_id: folderIdToUpload,
+              }
+              const noteRes = await fetch(`${API}/api/v1/notes`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify(noteBody),
+              })
+              if (noteRes.ok) {
+                // nothing else needed here; we'll refresh lists after loop
+              }
+            }
+          } catch (e) {}
         }
       } catch (err) {
         console.error(`[Layout] 파일 업로드 중 예외: "${file.name}"`, err)
@@ -319,6 +371,7 @@ export default function Layout() {
     setUploadTargetFolderId(null)
     e.target.value = null
     setOpProgress({ visible: false, label: '', value: 0 })
+    try { window.dispatchEvent(new Event('nf:notes-refresh')) } catch {}
   }
 
   // ── OCR ──────────────────────────────────────────────────────────
@@ -485,13 +538,14 @@ export default function Layout() {
         )}
 
         {local.pathname.startsWith('/notes/') && (
-          <BottomBar
-            statusText={statusText}
-            isRecording={isRecording}
-            onRecordClick={handleRecord}
-            onSummarizeClick={onSummarizeClick}
-            onUploadClick={handleUploadClick}
-            onOcrClick={handleOcrClick}
+        <BottomBar
+          statusText={statusText}
+          isRecording={isRecording}
+          onRecordClick={handleRecord}
+          onSummarizeClick={onSummarizeClick}
+          onUploadClick={handleUploadClick}
+          onOcrClick={handleOcrClick}
+            onGenerateClick={handleGenerateQuiz}
           />
         )}
 

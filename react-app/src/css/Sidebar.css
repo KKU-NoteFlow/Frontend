@@ -149,6 +149,21 @@
   color: var(--nf-primary);
 }
 
+/* Predicted button uses same sizing as other control buttons */
+.sidebar-controls__predicted {
+  width: 100%;
+  padding: 0.6rem 0;
+  margin-bottom: 0.4rem;
+  font-size: 0.85rem;
+  border: 1px solid var(--nf-border);
+  border-radius: var(--nf-radius-sm);
+  background: var(--nf-surface);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+.sidebar-controls__predicted:hover,
+.sidebar-controls__predicted.active { background: var(--nf-surface-2); border-color: var(--nf-primary); color: var(--nf-primary); }
+
 /* 계층별 들여쓰기 */
 .folder-section > .folder-list {
   padding-left: var(--indent-step);
