@@ -149,7 +149,6 @@ export default function LoginPage() {
             <nav className="right-nav">
               <ul>
                 <li onClick={() => navigate('/home')}>Home</li>
-                <li onClick={() => navigate('/features')}>Features</li>
                 <li onClick={() => navigate('/pricing')}>Pricing</li>
                 <li onClick={() => navigate('/docs')}>Docs</li>
               </ul>

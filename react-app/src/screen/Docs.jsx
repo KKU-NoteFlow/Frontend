@@ -75,30 +75,58 @@ console.log('snippet');
         </div>
       </div>
     )
-    if (activeId === 'organizing') return (
-      <div className="panel-fade">
-        <h2 className="panel-title">Organizing</h2>
-        <p className="panel-sub">폴더/서브폴더로 지식을 층위 있게 정리하세요. 즐겨찾기로 중요한 노트를 고정하고, 검색/필터로 즉시 찾아갈 수 있습니다.</p>
-        <div className="panel-divider" />
-        <p className="docs-p">폴더 이동, 이름 변경, 정렬은 사이드바에서 간단히 관리할 수 있습니다.</p>
-      </div>
-    )
-    if (activeId === 'shortcuts') return (
-      <div className="panel-fade">
-        <h2 className="panel-title">Keyboard Shortcuts</h2>
-        <p className="panel-sub">핵심 동작은 단축키로 더 빠르게. 편집, 탐색, 전환이 손끝에서 이루어집니다.</p>
-        <div className="panel-divider" />
-        <pre className="docs-code">{`N: 새 노트
-F: 검색 열기
-S: 즐겨찾기 토글
-⌘/Ctrl + K: 커맨드 팔레트`}</pre>
-        <p className="docs-p">팁: <span className="kbd">⌘/Ctrl</span> + <span className="kbd">K</span> 로 언제든지 커맨드 팔레트를 열어 모든 기능에 빠르게 접근하세요.</p>
-      </div>
-    )
     if (activeId === 'stt') return (
       <div className="panel-fade">
         <h2 className="panel-title">Speech to Text</h2>
-        <p className="panel-sub">아이디어가 떠오르는 순간, 음성으로 빠르게 기록하고 텍스트로 변환하세요. 권한만 허용하면 바로 시작할 수 있습니다.</p>
+        <p className="panel-sub">마이크 입력을 텍스트로 변환해 아이디어를 바로 기록합니다.</p>
+        <div className="panel-divider" />
+        <p className="docs-p">노트 화면 하단 작업 도크의 “녹음” 버튼을 사용하세요. 실시간 전사가 입력되며, 브라우저 정책에 따라 장시간 녹음은 자동 재시작될 수 있습니다.</p>
+      </div>
+    )
+    if (activeId === 'ocr') return (
+      <div className="panel-fade">
+        <h2 className="panel-title">OCR (Image → Text)</h2>
+        <p className="panel-sub">이미지/문서에서 텍스트를 추출해 노트로 변환합니다. 한국어+영어(kor+eng) 인식.</p>
+        <div className="panel-divider" />
+        <p className="docs-p">노트 화면 하단의 작업 도크에서 “텍스트 변환”을 눌러 이미지를 업로드하세요. 결과가 충분하면 자동으로 노트가 생성되고, 짧으면 미리보기로 확인합니다.</p>
+        <div className="code-group" style={{marginTop:'12px'}}>
+          <div className="code-header">
+            <div className="code-title">API</div>
+            <button className="copy-btn" onClick={() => copy('ocr', 'POST /api/v1/files/ocr?langs=kor+eng&max_pages=50\nForm: file, (optional) folder_id')}>{copied==='ocr'?'Copied!':'Copy'}</button>
+          </div>
+          <pre className="docs-code">{`POST /api/v1/files/ocr?langs=kor+eng&max_pages=50
+Form: file, (optional) folder_id`}</pre>
+        </div>
+      </div>
+    )
+    if (activeId === 'summarize') return (
+      <div className="panel-fade">
+        <h2 className="panel-title">Summarize</h2>
+        <p className="panel-sub">현재 노트에서 핵심만 추려 간결하게 요약합니다.</p>
+        <div className="panel-divider" />
+        <p className="docs-p">노트 화면 하단의 작업 도크에서 “요약”을 클릭하세요. 서버가 노트 내용을 바탕으로 요약하고 결과를 반영합니다.</p>
+        <div className="code-group" style={{marginTop:'12px'}}>
+          <div className="code-header">
+            <div className="code-title">API</div>
+            <button className="copy-btn" onClick={() => copy('sum', 'POST /api/v1/notes/:id/summarize')}>{copied==='sum'?'Copied!':'Copy'}</button>
+          </div>
+          <pre className="docs-code">{`POST /api/v1/notes/:id/summarize`}</pre>
+        </div>
+      </div>
+    )
+    if (activeId === 'quiz') return (
+      <div className="panel-fade">
+        <h2 className="panel-title">Quiz Generator</h2>
+        <p className="panel-sub">노트 내용을 바탕으로 학습용 문제를 자동 생성합니다.</p>
+        <div className="panel-divider" />
+        <p className="docs-p">생성된 문제 노트는 자동으로 열리고, 사이드바에서 다시 찾아볼 수 있습니다.</p>
+        <div className="code-group" style={{marginTop:'12px'}}>
+          <div className="code-header">
+            <div className="code-title">API</div>
+            <button className="copy-btn" onClick={() => copy('quiz', 'POST /api/v1/notes/:id/generate-quiz')}>{copied==='quiz'?'Copied!':'Copy'}</button>
+          </div>
+          <pre className="docs-code">{`POST /api/v1/notes/:id/generate-quiz`}</pre>
+        </div>
       </div>
     )
     if (activeId === 'open-source') return (
@@ -175,26 +203,33 @@ npm run dev`}</pre>
           <h3>Editor Basics</h3>
           <p>Markdown · 코드 · 체크</p>
         </a>
-        <a className={`docs-card ${activeId==='organizing' ? 'active' : ''}`} href="#" onClick={(e) => { e.preventDefault(); go('organizing') }}>
-          <div className="icon-ring" aria-hidden>
-            <svg viewBox="0 0 24 24"><path d="M4 4h7v6H4V4Zm9 0h7v6h-7V4ZM4 14h7v6H4v-6Zm9 0h7v6h-7v-6Z"/></svg>
-          </div>
-          <h3>Organization</h3>
-          <p>폴더 · 즐겨찾기 · 검색</p>
-        </a>
-        <a className={`docs-card ${activeId==='shortcuts' ? 'active' : ''}`} href="#" onClick={(e) => { e.preventDefault(); go('shortcuts') }}>
-          <div className="icon-ring" aria-hidden>
-            <svg viewBox="0 0 24 24"><path d="M7 7h10v2H7V7Zm0 4h7v2H7v-2Zm0 4h10v2H7v-2Z"/></svg>
-          </div>
-          <h3>Shortcuts</h3>
-          <p>손을 떼지 않는 흐름</p>
-        </a>
         <a className={`docs-card ${activeId==='stt' ? 'active' : ''}`} href="#" onClick={(e) => { e.preventDefault(); go('stt') }}>
           <div className="icon-ring" aria-hidden>
             <svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 14 0h-2Z"/></svg>
           </div>
           <h3>Speech to Text</h3>
           <p>아이디어를 음성으로</p>
+        </a>
+        <a className={`docs-card ${activeId==='ocr' ? 'active' : ''}`} href="#" onClick={(e) => { e.preventDefault(); go('ocr') }}>
+          <div className="icon-ring" aria-hidden>
+            <svg viewBox="0 0 24 24"><path d="M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm2 3h12v8H6V8Z"/></svg>
+          </div>
+          <h3>OCR</h3>
+          <p>이미지 → 텍스트</p>
+        </a>
+        <a className={`docs-card ${activeId==='summarize' ? 'active' : ''}`} href="#" onClick={(e) => { e.preventDefault(); go('summarize') }}>
+          <div className="icon-ring" aria-hidden>
+            <svg viewBox="0 0 24 24"><path d="M4 4h16v2H4V4Zm0 4h10v2H4V8Zm0 4h16v2H4v-2Zm0 4h12v2H4v-2Z"/></svg>
+          </div>
+          <h3>Summarize</h3>
+          <p>핵심만 간결하게</p>
+        </a>
+        <a className={`docs-card ${activeId==='quiz' ? 'active' : ''}`} href="#" onClick={(e) => { e.preventDefault(); go('quiz') }}>
+          <div className="icon-ring" aria-hidden>
+            <svg viewBox="0 0 24 24"><path d="M12 2 1 21h22L12 2Zm0 7a1 1 0 0 0-1 1v2h2V10a1 1 0 0 0-1-1Zm-1 7h2v2h-2v-2Z"/></svg>
+          </div>
+          <h3>Quiz Generator</h3>
+          <p>학습용 문제 생성</p>
         </a>
         <a className={`docs-card ${activeId==='open-source' ? 'active' : ''}`} href="#" onClick={(e) => { e.preventDefault(); go('open-source') }}>
           <div className="icon-ring" aria-hidden>
