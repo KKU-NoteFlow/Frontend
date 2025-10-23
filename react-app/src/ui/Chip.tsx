@@ -13,4 +13,7 @@ const Chip: React.FC<ChipProps> = ({ className = '', selected = false, children,
 )
 
 export default Chip
-
+/*
+  UI: Chip
+  Purpose: Compact pill for tags/filters.
+*/

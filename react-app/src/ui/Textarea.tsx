@@ -10,4 +10,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(function T
 })
 
 export default Textarea
-
+/*
+  UI: Textarea
+  Purpose: Multiline text field with consistent padding, border, and focus styles.
+*/

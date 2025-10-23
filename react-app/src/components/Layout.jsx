@@ -579,3 +579,10 @@ export default function Layout() {
     </div>
   )
 }
+/*
+  Component: Layout
+  Role: Shared shell around app pages — renders Topbar, Sidebar, and main Outlet area.
+  Notes:
+   - Orchestrates sidebar state (pinned/hidden/temporary) and passes handlers down.
+   - Keeps consistent app chrome and spacing across nested routes.
+*/

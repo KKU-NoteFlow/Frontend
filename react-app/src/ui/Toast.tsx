@@ -42,4 +42,7 @@ const Toast: React.FC<ToastProps> = ({ open, message, variant = 'info', onClose,
 }
 
 export default Toast
-
+/*
+  UI: Toast
+  Purpose: Temporary, non-blocking message surface.
+*/

@@ -103,3 +103,8 @@ export default function SignupPage() {
     </div>
   )
 }
+/*
+  Screen: Signup
+  Purpose: Create an account and then direct the user to `/main`.
+  Notes: Mirrors Login styles for consistent auth UX.
+*/

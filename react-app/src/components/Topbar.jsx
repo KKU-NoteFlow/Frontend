@@ -132,3 +132,10 @@ export default function TopBar({
     </header>
   )
 }
+/*
+  Component: Topbar
+  Role: Global header — theme toggle, quick search, sidebar toggle, and actions.
+  UX:
+   - Search filters local notes client-side after fetching (simple contains match).
+   - Theme mode persisted in localStorage (`nf-theme-mode`) and toggles `.dark` on root/body.
+*/

@@ -125,3 +125,8 @@ export default function ToastMarkdownEditor({ html, onUpdate, uploadImage, onRea
     <div className="toast-md-editor" ref={containerRef} />
   )
 }
+/*
+  Component: ToastMarkdownEditor
+  Role: Alternative editor using @toast-ui/editor for Markdown authoring.
+  Note: Chosen for specific UX needs; can be swapped with MarkdownEditor as required.
+*/

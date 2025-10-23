@@ -7,4 +7,7 @@ const Skeleton: React.FC<SkeletonProps> = ({ className = '', width = '100%', hei
 )
 
 export default Skeleton
-
+/*
+  UI: Skeleton
+  Purpose: Placeholder shimmer blocks to indicate loading content.
+*/

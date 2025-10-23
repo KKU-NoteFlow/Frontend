@@ -46,4 +46,9 @@ export default function installFetchLogger() {
     console.error('installFetchLogger: addEventListener failed', e)
   }
 }
-
+/**
+ * installFetchLogger
+ * Purpose: Wraps global fetch to log requests/responses for easier debugging during development.
+ * Behavior: Non-intrusive; if wrapping fails it logs an error and leaves fetch untouched.
+ * Usage: Called once from `main.tsx` at startup.
+ */

@@ -27,4 +27,8 @@ export default class ErrorBoundary extends React.Component {
     return this.props.children
   }
 }
-
+/*
+  Component: ErrorBoundary
+  Role: Catch JavaScript errors in child component tree and render a fallback UI.
+  Usage: Wrap around screens or expensive components to avoid cascading crashes.
+*/

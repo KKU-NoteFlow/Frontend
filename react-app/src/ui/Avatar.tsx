@@ -22,4 +22,7 @@ const Avatar: React.FC<AvatarProps> = ({ name = 'U', src, alt, style, ...rest })
 }
 
 export default Avatar
-
+/*
+  UI: Avatar
+  Purpose: Circular image/initials for user identity.
+*/

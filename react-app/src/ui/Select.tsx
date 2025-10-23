@@ -14,4 +14,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(function Select(
 })
 
 export default Select
-
+/*
+  UI: Select
+  Purpose: Basic select styled to match inputs/buttons; keep native semantics.
+*/

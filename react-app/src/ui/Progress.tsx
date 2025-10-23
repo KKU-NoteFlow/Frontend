@@ -12,4 +12,7 @@ const Progress: React.FC<ProgressProps> = ({ value, label }) => (
 )
 
 export default Progress
-
+/*
+  UI: Progress
+  Purpose: Linear progress indicator for loading or tasks.
+*/

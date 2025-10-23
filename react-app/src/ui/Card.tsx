@@ -7,4 +7,7 @@ const Card: React.FC<CardProps> = ({ className = '', children, ...rest }) => (
 )
 
 export default Card
-
+/*
+  UI: Card
+  Purpose: Surface container with border, radius, and shadow; groups related content.
+*/

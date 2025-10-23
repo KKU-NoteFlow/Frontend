@@ -12,6 +12,10 @@ import NoteDetail      from './screen/NoteDetail' // 👈 NoteDetail 컴포넌�
 import NaverCallback   from './screen/NaverCallback'
 import KakaoCallback   from './screen/KakaoCallback'
 import SpeechToText     from './screen/SpeechToText'
+import Home            from './screen/Home'
+import Features        from './screen/Features'
+import Pricing         from './screen/Pricing'
+import Docs            from './screen/Docs'
 
 import './App.css'
 
@@ -29,6 +33,12 @@ const App: React.FC = () => (
       <Route path="/signup"           element={<SignupPage />} />
       <Route path="/naver/callback"   element={<NaverCallback />} />
       <Route path="/kakao/callback"   element={<KakaoCallback />} />
+
+      {/* --- 마케팅 / 문서 페이지 --- */}
+      <Route path="/home"             element={<Home />} />
+      <Route path="/features"         element={<Features />} />
+      <Route path="/pricing"          element={<Pricing />} />
+      <Route path="/docs"             element={<Docs />} />
 
       {/* --- Layout 하위 라우팅 --- */}
       <Route element={<Layout />}>
@@ -52,3 +62,13 @@ const App: React.FC = () => (
 )
 
 export default App
+/*
+  NoteFlow Frontend — Routing Entry (App)
+  Purpose: Declares all react-router routes for authentication, main app, notes, STT, and marketing/docs.
+  Structure:
+   - Public routes: `/`, `/signup`, social auth callbacks, marketing pages (`/home`, `/features`, `/pricing`, `/docs`).
+   - App routes under `<Layout/>`: `/main`, `/main/:folderId`, `/notes/new`, `/notes/:id`, `/stt`.
+   - Wildcard redirects to `/`.
+  Notes:
+   - `NoteDetailWithKey` re-renders the detail component when URL `id` changes.
+*/

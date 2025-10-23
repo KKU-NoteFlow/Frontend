@@ -9,4 +9,7 @@ const Kbd: React.FC<React.HTMLAttributes<HTMLElement>> = ({ children, ...rest })
 )
 
 export default Kbd
-
+/*
+  UI: Kbd
+  Purpose: Keyboard key visual for shortcut hints.
+*/

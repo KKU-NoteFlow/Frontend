@@ -111,3 +111,8 @@ export default function ChecklistCard({ API, token }) {
     </div>
   )
 }
+/*
+  Component: ChecklistCard
+  Role: Lightweight checklist widget for quick task tracking inside the app.
+  Notes: Used in dashboard/side panels; avoids heavy editor context.
+*/

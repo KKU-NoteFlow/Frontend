@@ -46,3 +46,8 @@ export default function BottomBar({ isRecording, statusText, onRecordClick, onSu
     </div>
   )
 }
+/*
+  Component: Bottombar
+  Role: Secondary action/status area at the bottom of the editor viewport.
+  Notes: Keep visual noise low; complements Topbar.
+*/

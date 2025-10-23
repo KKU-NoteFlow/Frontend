@@ -82,3 +82,8 @@ export default function MarkdownViewer({ content }) {
     </div>
   )
 }
+/*
+  Component: MarkdownViewer
+  Role: Render Markdown content with syntax highlighting and GFM support.
+  Tech: Uses react-markdown, remark-gfm, rehype-highlight to format output.
+*/

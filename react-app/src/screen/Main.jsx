@@ -672,3 +672,9 @@ export default function MainPage() {
     </>
   )
 }
+/*
+  Screen: Main
+  Purpose: Primary workspace listing notes by folder/filter and hosting the editor area.
+  Composition: Works with Layout, Sidebar, Topbar, Bottombar, and editor/viewer components.
+  Notes: Handles high-level navigation (e.g., to notes, folders) and orchestrates UI state.
+*/

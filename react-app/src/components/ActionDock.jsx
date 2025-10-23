@@ -21,4 +21,8 @@ export default function ActionDock({ onRecordClick, onSummarizeClick, onUploadCl
     </div>
   )
 }
-
+/*
+  Component: ActionDock
+  Role: Floating/attached quick actions (create note, upload, etc.) for rapid workflows.
+  UX: Designed to minimize pointer travel and keep flow state.
+*/

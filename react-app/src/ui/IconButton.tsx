@@ -17,4 +17,7 @@ const IconButton: React.FC<IconButtonProps> = ({ size = 'md', className = '', ch
 }
 
 export default IconButton
-
+/*
+  UI: IconButton
+  Purpose: Square icon-only button for compact controls.
+*/

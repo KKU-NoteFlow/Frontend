@@ -17,4 +17,7 @@ const Breadcrumbs: React.FC<Props> = ({ items, ...rest }) => (
 )
 
 export default Breadcrumbs
-
+/*
+  UI: Breadcrumbs
+  Purpose: Hierarchical navigation aid.
+*/

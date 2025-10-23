@@ -74,4 +74,8 @@ export default function ColorPalette({ mode = 'light' }) {
     </div>
   )
 }
-
+/*
+  Component: ColorPalette
+  Role: Adjusts CSS variables on the root to theme the app (light/dark, palette variants).
+  Notes: Centralizes token overrides to keep components simple.
+*/

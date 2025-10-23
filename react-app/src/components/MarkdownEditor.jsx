@@ -146,3 +146,8 @@ export default function MarkdownEditor({ html, onUpdate, uploadImage, onReady })
     </div>
   )
 }
+/*
+  Component: MarkdownEditor
+  Role: Rich text editing with Markdown features (via Tiptap/Milkdown stack if enabled here).
+  Note: Pairs with MarkdownViewer for read-only rendering.
+*/

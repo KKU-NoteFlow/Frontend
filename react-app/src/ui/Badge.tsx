@@ -7,4 +7,7 @@ const Badge: React.FC<BadgeProps> = ({ className = '', children, ...rest }) => (
 )
 
 export default Badge
-
+/*
+  UI: Badge
+  Purpose: Small label for status/count annotations.
+*/

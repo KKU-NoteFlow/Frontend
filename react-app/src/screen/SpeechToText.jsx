@@ -142,3 +142,8 @@ export default function SpeechToText() {
     </div>
   )
 }
+/*
+  Screen: SpeechToText
+  Purpose: Convert speech to text and save as notes; demonstrates microphone permissions flow.
+  UX: Provides start/stop and a way back to the main workspace.
+*/

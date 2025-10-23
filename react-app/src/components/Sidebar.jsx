@@ -890,3 +890,14 @@ export default function Sidebar({ sidebarState = 'pinned', setSidebarState = () 
     </>
   );
 }
+/*
+  Component: Sidebar
+  Role: Primary navigation — folders tree, notes list, filters (all/recent/favorites), and drag & drop.
+  Data:
+   - Fetches folders and notes, builds flat and tree structures.
+   - Recent/predicted notes are lazy-fetched on panel open.
+  DnD:
+   - Supports moving folders, uploading files to create notes, and dragging notes between folders.
+  Notes:
+   - Keeps its own UI state (openMap, context menus) and notifies parent via callbacks.
+*/
