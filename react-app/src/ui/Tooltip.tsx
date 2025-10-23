@@ -28,3 +28,7 @@ const Tooltip: React.FC<Props> = ({ content, children }) => {
 }
 
 export default Tooltip
+/*
+  UI: Tooltip
+  Purpose: Hover/focus tooltip for concise hints; prefers accessibility.
+*/

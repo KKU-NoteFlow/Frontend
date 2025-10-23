@@ -65,3 +65,8 @@ export default function NewNotePage() {
     </div>
   )
 }
+/*
+  Screen: NewNotePage
+  Purpose: Create a new note quickly, then navigate back to `/main`.
+  Notes: Keeps UI minimal to reduce friction at note capture time.
+*/

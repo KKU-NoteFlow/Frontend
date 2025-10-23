@@ -45,3 +45,7 @@ const Toggle: React.FC<ToggleProps> = ({ checked, onChange, id, label, disabled 
 }
 
 export default Toggle
+/*
+  UI: Toggle
+  Purpose: On/off switch component; keyboard accessible.
+*/

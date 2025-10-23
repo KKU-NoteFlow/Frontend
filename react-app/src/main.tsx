@@ -18,3 +18,11 @@ ReactDOM.createRoot(rootElement).render(
     </React.StrictMode>
   </GoogleOAuthProvider>
 );
+/*
+  NoteFlow Frontend — App Bootstrap
+  Purpose: Mounts the React app, wires global styles, and provides Google OAuth context.
+  Key points:
+   - Imports global `index.css` (design tokens + base styles).
+   - Installs fetch logger for dev visibility (non-fatal if it fails).
+   - Wraps the app with GoogleOAuthProvider (env: VITE_GOOGLE_CLIENT_ID).
+*/

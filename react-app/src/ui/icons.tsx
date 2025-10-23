@@ -74,3 +74,7 @@ export const IconAi = makeIcon(<>
   <path d="M10 21v-2" />
   <path d="M14 21v-2" />
 </>)
+/*
+  UI: icons.tsx
+  Purpose: Central place to export common inline SVG icon components.
+*/

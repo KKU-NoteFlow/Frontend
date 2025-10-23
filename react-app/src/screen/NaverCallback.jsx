@@ -30,3 +30,7 @@ export default function NaverCallback() {
 
   return <div>네이버 로그인 처리 중...</div>;
 }
+/*
+  Screen: NaverCallback
+  Purpose: Handle OAuth callback from Naver; exchanges code for token, stores JWT, goes to `/main`.
+*/

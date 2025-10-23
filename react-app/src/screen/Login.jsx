@@ -133,10 +133,10 @@ export default function LoginPage() {
           <div className="login-right">
             <nav className="right-nav">
               <ul>
-                <li>Home</li>
-                <li>Features</li>
-                <li>Pricing</li>
-                <li>Docs</li>
+                <li onClick={() => navigate('/home')}>Home</li>
+                <li onClick={() => navigate('/features')}>Features</li>
+                <li onClick={() => navigate('/pricing')}>Pricing</li>
+                <li onClick={() => navigate('/docs')}>Docs</li>
               </ul>
             </nav>
             <svg className="decorative-blob" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
@@ -155,3 +155,10 @@ export default function LoginPage() {
     </GoogleOAuthProvider>
   );
 }
+/*
+  Screen: Login
+  Purpose: Email/password + social login (Google, Naver, Kakao) entry screen.
+  Behavior:
+   - On success, stores JWT in localStorage as `access_token` and navigates to `/main`.
+   - Right-side links navigate to marketing/docs pages.
+*/

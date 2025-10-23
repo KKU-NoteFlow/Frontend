@@ -526,3 +526,8 @@ export default function NoteDetail() {
     </div>
   )
 }
+/*
+  Screen: NoteDetail
+  Purpose: View/edit a single note by id; integrates Markdown editor and viewer.
+  Routing: `/notes/:id` with a key from `App.tsx` to force remount on id change.
+*/

@@ -397,4 +397,8 @@ function TimeSelect({ label, apm, setApm, hour, setHour, min, setMin }) {
     </div>
   )
 }
-
+/*
+  Component: DashboardTimetable
+  Role: Simple schedule/timeline visualization block for dashboard use.
+  Notes: Pure presentational; receives items via props.
+*/

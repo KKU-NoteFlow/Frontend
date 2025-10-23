@@ -42,4 +42,8 @@ export const Button: React.FC<ButtonProps> = ({
 }
 
 export default Button
-
+/*
+  UI: Button
+  Purpose: Reusable button component aligned with token-based theme.
+  Notes: Prefer this over native <button> for consistent spacing, radius, and states.
+*/

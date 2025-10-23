@@ -21,4 +21,7 @@ const Tabs: React.FC<Props> = ({ tabs, value, onChange }) => (
 )
 
 export default Tabs
-
+/*
+  UI: Tabs
+  Purpose: Simple tabs primitive for switching between panels.
+*/

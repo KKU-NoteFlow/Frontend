@@ -29,4 +29,7 @@ const Modal: React.FC<ModalProps> = ({ open, onClose, title, children }) => {
 }
 
 export default Modal
-
+/*
+  UI: Modal
+  Purpose: Layered dialog with backdrop; traps focus when open.
+*/

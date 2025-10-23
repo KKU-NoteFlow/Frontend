@@ -25,3 +25,8 @@ export default function ActionToolbar({ onRecordClick, onSummarizeClick, onUploa
     </div>
   )
 }
+/*
+  Component: ActionToolbar
+  Role: Contextual editing actions for notes (formatting, insertions, etc.).
+  Notes: Kept lean — relies on parent handlers and editor APIs passed via props.
+*/

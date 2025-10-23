@@ -50,3 +50,7 @@ export default function KakaoCallback() {
 
   return <div>카카오 로그인 처리 중입니다...</div>;
 }
+/*
+  Screen: KakaoCallback
+  Purpose: Handle OAuth callback from Kakao; exchanges code for token, stores JWT, goes to `/main`.
+*/

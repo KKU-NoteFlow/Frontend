@@ -10,4 +10,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(function Input(
 })
 
 export default Input
-
+/*
+  UI: Input
+  Purpose: Standardized text input with accessible focus and token colors.
+*/
