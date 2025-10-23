@@ -2,12 +2,22 @@ import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../css/Login.css';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
+import Mascot from '../components/Mascot';
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const googleLoginBtnRef = useRef(null);
+  const [mood, setMood] = useState('neutral'); // 'neutral' | 'happy' | 'sad'
+
+  // Use built-in vector mascots (no image): vary tints for variety
+  const tints = [
+    { start: '#ecfbf2', end: '#cfeee1' },
+    { start: '#eef7ff', end: '#d6e8ff' },
+    { start: '#fff4e8', end: '#ffe2c7' },
+    { start: '#f7ecff', end: '#e7d6ff' },
+  ]
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -20,13 +30,16 @@ export default function LoginPage() {
       });
       const data = await response.json();
       if (response.ok) {
+        setMood('happy');
         localStorage.setItem('access_token', data.access_token);
         navigate('/main');
       } else {
-        alert(data.message || '로그인 실패');
+        setMood('sad');
+        setTimeout(() => setMood('neutral'), 1800);
       }
     } catch (err) {
-      alert('서버와의 연결에 실패했습니다.');
+      setMood('sad');
+      setTimeout(() => setMood('neutral'), 1800);
     }
   };
 
@@ -110,13 +123,15 @@ export default function LoginPage() {
                   });
                   const data = await res.json();
                   if (res.ok) {
+                    setMood('happy');
                     localStorage.setItem('access_token', data.access_token);
                     navigate('/main');
                   } else {
-                    alert(data.message || '구글 로그인 실패');
+                    setMood('sad');
+                    setTimeout(() => setMood('neutral'), 1800);
                   }
                 }}
-                onError={() => alert('구글 로그인 실패')}
+                onError={() => { setMood('sad'); setTimeout(() => setMood('neutral'), 1800); }}
                 useOneTap={false}
               />
               </div>
@@ -139,15 +154,13 @@ export default function LoginPage() {
                 <li onClick={() => navigate('/docs')}>Docs</li>
               </ul>
             </nav>
-            <svg className="decorative-blob" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
-              <g transform="translate(300,300)">
-                <path d="M120,-150C165,-120,200,-80,210,-30C220,20,205,70,180,110C155,150,120,180,70,200C20,220,-40,220,-80,190C-120,160,-150,110,-170,60C-190,10,-200,-40,-180,-80C-160,-120,-120,-150,-70,-170C-20,-190,40,-190,90,-170C120,-155,80,-180,120,-150Z" fill="#2f6b7b" opacity="0.12"/>
-              </g>
-            </svg>
-
-            <div className="welcome-text">
-              <h2 className="welcome-title">Welcome.</h2>
-              <p className="welcome-sub">Nice to see you. Please login to continue to your dashboard and manage your notes.</p>
+            <div className="mascot-center" aria-hidden>
+              <Mascot
+                mood={mood}
+                variant="bear"
+                tint={{ start: '#e9f7ef', end: '#cfeee1' }}
+                size={0.92}
+              />
             </div>
           </div>
         </div>
