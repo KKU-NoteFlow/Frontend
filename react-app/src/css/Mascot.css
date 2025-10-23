@@ -1,0 +1,15 @@
+.mascot{ display:flex; align-items:center; justify-content:center }
+.mascot svg{ display:block }
+.mascot .mouth{ stroke:#123229; stroke-width:3.5; fill:none; stroke-linecap:round }
+.mascot.neutral .brow{ stroke:#355d50; stroke-width:2; fill:none; opacity:.6 }
+.mascot.happy .brow{ stroke:#2b735d; stroke-width:2; fill:none; opacity:.8 }
+.mascot.sad .brow{ stroke:#6b4b49; stroke-width:2; fill:none; opacity:.5 }
+.mascot .cheek{ fill:#f5c7c7; opacity:.6 }
+
+@media (prefers-reduced-motion: no-preference){
+  .mascot .cheek{ animation: blush 3.2s ease-in-out infinite alternate }
+}
+@keyframes blush{ from{ opacity:.35 } to{ opacity:.7 } }
+
+/* Disable pupil blinking for clarity */
+.mascot .pupil{ animation: none !important; }

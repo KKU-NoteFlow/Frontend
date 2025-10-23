@@ -103,7 +103,7 @@
 .login-right{
   width:60%;
   position:relative;
-  background:#f6efe8;
+  background:#f4faf7;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -134,9 +134,14 @@
   .avatar-circle{ margin-left:0 }
 }
 
-.decorative-blob{
-  display:none;
-}
+/* mascot area */
+
+/* Centered single mascot */
+.mascot-center{ width:100%; max-width:480px; display:flex; align-items:center; justify-content:center; pointer-events:none }
+.mascot-center .mascot{ filter: drop-shadow(0 12px 28px rgba(0,0,0,.06)); }
+
+@media (max-width: 920px){ .mascot-center{ max-width:420px } }
+@media (max-width: 780px){ .mascot-center{ max-width:360px } }
 
 .right-nav{ position:absolute; top:24px; right:36px }
 .right-nav ul{ display:flex; gap:22px; list-style:none; margin:0; padding:0 }
