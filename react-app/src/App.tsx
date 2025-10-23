@@ -13,7 +13,6 @@ import NaverCallback   from './screen/NaverCallback'
 import KakaoCallback   from './screen/KakaoCallback'
 import SpeechToText     from './screen/SpeechToText'
 import Home            from './screen/Home'
-import Features        from './screen/Features'
 import Pricing         from './screen/Pricing'
 import Docs            from './screen/Docs'
 
@@ -36,7 +35,6 @@ const App: React.FC = () => (
 
       {/* --- 마케팅 / 문서 페이지 --- */}
       <Route path="/home"             element={<Home />} />
-      <Route path="/features"         element={<Features />} />
       <Route path="/pricing"          element={<Pricing />} />
       <Route path="/docs"             element={<Docs />} />
 

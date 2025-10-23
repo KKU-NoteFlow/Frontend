@@ -13,7 +13,6 @@ export default function MarketingNav() {
         </Link>
         <nav className="mkt-links">
           <Link to="/home" className={`mkt-link ${pathname === '/home' ? 'active' : ''}`}>Home</Link>
-          <Link to="/features" className={`mkt-link ${pathname === '/features' ? 'active' : ''}`}>Features</Link>
           <Link to="/pricing" className={`mkt-link ${pathname === '/pricing' ? 'active' : ''}`}>Pricing</Link>
           <Link to="/docs" className={`mkt-link ${pathname === '/docs' ? 'active' : ''}`}>Docs</Link>
         </nav>
