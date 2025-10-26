@@ -187,7 +187,26 @@ export default function MainPage() {
       }
     }
     window.addEventListener('nf:notes-refresh', handler)
-    return () => window.removeEventListener('nf:notes-refresh', handler)
+    const createdHandler = (e) => {
+      try {
+        const n = e?.detail
+        if (!n) return
+        // insert new note at top if it matches current filter/folder
+        setNotes(prev => {
+          const exists = prev.find(x => x.id === n.id)
+          if (exists) return prev.map(x=> x.id===n.id ? n : x)
+          // if folder filter is active, ensure note belongs to it
+          if (parsedFolderId && n.folder_id !== parsedFolderId) return prev
+          if (filter === 'favorites' && !n.is_favorite) return prev
+          return [n, ...prev]
+        })
+      } catch (e) { console.error('nf:note-created handler err', e) }
+    }
+    window.addEventListener('nf:note-created', createdHandler)
+    return () => {
+      window.removeEventListener('nf:notes-refresh', handler)
+      window.removeEventListener('nf:note-created', createdHandler)
+    }
   }, [API, token, parsedFolderId, filter])
 
   const handleDragOver = (e) => { e.preventDefault() }

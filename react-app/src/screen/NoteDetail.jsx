@@ -16,6 +16,7 @@ export default function NoteDetail() {
   const [saving, setSaving] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [titleText, setTitleText] = useState('')
+  
   const {
     setCurrentNote,
     setOnSummarizeClick,
@@ -178,74 +179,25 @@ export default function NoteDetail() {
   }
 
   // 요약
-  const handleSummarize = useCallback(async () => {
+  const handleSummarize = useCallback(async (opts) => {
     if (!note) return
     setStatusText?.('⏳ 요약 중…')
     try {
       try { setOpProgress?.({ visible: true, label: '요약 중…', value: 5 }) } catch {}
-      const res = await fetch(`${API}/api/v1/notes/${note.id}/summarize`, {
+      // Use sync summarization endpoint to get created note JSON directly (avoid SSE timing issues)
+      const res = await fetch(`${API}/api/v1/notes/${note.id}/summarize_sync`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       })
       if (!res.ok) throw new Error('summarize start failed')
-
-      if (res.body && res.body.getReader) {
-        const reader = res.body.getReader()
-        const decoder = new TextDecoder('utf-8')
-        let done = false
-        let buffered = ''
-        let heuristicVal = 5
-        const heuristicInterval = setInterval(() => {
-          try {
-            if (!setOpProgress) return
-            heuristicVal = Math.min(85, heuristicVal + 1)
-            setOpProgress(prev => ({ visible: true, label: prev?.label || '요약 중…', value: heuristicVal }))
-          } catch (e) {}
-        }, 700)
-
-        try {
-          while (!done) {
-            const r = await reader.read()
-            done = r.done
-            if (r.value) {
-              const chunk = decoder.decode(r.value, { stream: true })
-              buffered += chunk
-              const parts = buffered.split(/\n\n/)
-              buffered = parts.pop() || ''
-              for (const part of parts) {
-                const lines = part.split(/\n/).map(l => l.trim()).filter(Boolean)
-                for (const line of lines) {
-                  let content = line
-                  if (line.startsWith('data:')) content = line.replace(/^data:\s*/, '')
-                  try {
-                    const obj = JSON.parse(content)
-                    const pct = obj.progress ?? obj.percent ?? obj.pct ?? obj.value
-                    if (typeof pct === 'number' && setOpProgress) {
-                      const v = Math.max(0, Math.min(100, Math.round(pct)))
-                      setOpProgress({ visible: true, label: obj.message || '요약 중…', value: v })
-                      continue
-                    }
-                    if (obj.message && setOpProgress) {
-                      setOpProgress(prev => ({ visible: true, label: obj.message, value: prev?.value || 10 }))
-                      continue
-                    }
-                  } catch {}
-                  const m = content.match(/(\d{1,3})\s*%/)
-                  if (m && setOpProgress) {
-                    const v = Math.max(0, Math.min(100, parseInt(m[1], 10)))
-                    setOpProgress({ visible: true, label: '요약 진행', value: v })
-                    continue
-                  }
-                  if (setOpProgress) setOpProgress(prev => ({ visible: true, label: content.slice(0, 80), value: prev?.value || 10 }))
-                }
-              }
-            }
-          }
-        } finally {
-          clearInterval(heuristicInterval)
-        }
-      } else {
-        try { await res.text() } catch {}
+      // Synchronous response: backend returns created note JSON when sync=true
+      const created = await res.json()
+      console.log('[summarize] sync response', created)
+      if (created && created.id) {
+        try { window.dispatchEvent(new Event('nf:notes-refresh')) } catch (e) {}
+        try { window.dispatchEvent(new CustomEvent('nf:note-created', { detail: created })) } catch(e) {}
+        setCurrentNote?.(created)
+        try { navigate(`/notes/${created.id}`) } catch (e) {}
       }
 
       const refreshed = await fetch(`${API}/api/v1/notes/${note.id}`, {
@@ -442,38 +394,39 @@ export default function NoteDetail() {
           </div>
 
           {!isEditing ? (
-            <div style={{ display: 'flex', gap: 8 }}>
-              <Button onClick={() => { if (scrollRef.current) lastScrollRef.current = scrollRef.current.scrollTop; setIsEditing(true) }}>
-                ✏️ 편집
-              </Button>
-              {/* ✅ 노트 화면에서 즐겨찾기 토글 */}
-              <button
-                className="nf-btn"
-                onClick={handleToggleFavoriteHere}
-                title={note.is_favorite ? '즐겨찾기 해제' : '즐겨찾기'}
-                aria-label={note.is_favorite ? '즐겨찾기 해제' : '즐겨찾기'}
-                style={{ minWidth: 44 }}
-              >
-                {note.is_favorite ? '★ 즐겨찾기' : '☆ 즐겨찾기'}
-              </button>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', gap: 8 }}>
-              <Button onClick={handleSave} disabled={saving}>
-                {saving ? '저장중…' : '💾 저장'}
-              </Button>
-              <button className="nf-btn" onClick={handleCancelEdit} type="button">취소</button>
-              {/* 편집 중에도 즐겨찾기 가능 */}
-              <button
-                className="nf-btn"
-                onClick={handleToggleFavoriteHere}
-                title={note.is_favorite ? '즐겨찾기 해제' : '즐겨찾기'}
-                aria-label={note.is_favorite ? '즐겨찾기 해제' : '즐겨찾기'}
-              >
-                {note.is_favorite ? '★' : '☆'}
-              </button>
-            </div>
-          )}
+              <div style={{ display: 'flex', gap: 8 }}>
+                <Button onClick={() => { if (scrollRef.current) lastScrollRef.current = scrollRef.current.scrollTop; setIsEditing(true) }}>
+                  ✏️ 편집
+                </Button>
+                {/* ✅ 노트 화면에서 즐겨찾기 토글 */}
+                <button
+                  className="nf-btn"
+                  onClick={handleToggleFavoriteHere}
+                  title={note.is_favorite ? '즐겨찾기 해제' : '즐겨찾기'}
+                  aria-label={note.is_favorite ? '즐겨찾기 해제' : '즐겨찾기'}
+                  style={{ minWidth: 44 }}
+                >
+                  {note.is_favorite ? '★ 즐겨찾기' : '☆ 즐겨찾기'}
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <Button onClick={handleSave} disabled={saving}>
+                  {saving ? '저장중…' : '💾 저장'}
+                </Button>
+                <button className="nf-btn" onClick={handleCancelEdit} type="button">취소</button>
+                {/* 편집 중에도 즐겨찾기 가능 */}
+                <button
+                  className="nf-btn"
+                  onClick={handleToggleFavoriteHere}
+                  title={note.is_favorite ? '즐겨찾기 해제' : '즐겨찾기'}
+                  aria-label={note.is_favorite ? '즐겨찾기 해제' : '즐겨찾기'}
+                >
+                  {note.is_favorite ? '★' : '☆'}
+                </button>
+                
+              </div>
+            )}
         </div>
 
         <div className="note-editor" ref={scrollRef} onDoubleClick={handleDblClick}>
@@ -489,6 +442,7 @@ export default function NoteDetail() {
               />
             )}
           </ErrorBoundary>
+          
           {sttInterim && (
             <div className="stt-interim-overlay" aria-hidden>
               {sttInterim}

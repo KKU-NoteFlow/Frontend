@@ -40,17 +40,15 @@ export default function TopBar({
       return
     }
     const API = import.meta.env.VITE_API_BASE_URL ?? ''
-    fetch(`${API}/api/v1/notes`, {
+    fetch(`${API}/api/v1/notes?q=${encodeURIComponent(query)}`, {
       headers: {
         Authorization: `Bearer ${localStorage.getItem('access_token')}`
       }
     })
       .then(res => res.ok ? res.json() : Promise.reject())
       .then(data => {
-        const filtered = data.filter(n =>
-          (n.title || '').toLowerCase().includes(query.toLowerCase())
-        )
-        setResults(filtered)
+        // Server returns filtered results; just use them.
+        setResults(data)
       })
       .catch(err => {
         console.error('노트 검색 실패:', err)
@@ -117,6 +115,7 @@ export default function TopBar({
       </div>
 
       <div className="topbar-actions">
+        {/* 원래 요약 버튼 UI는 NoteDetail에 의존하므로 상단에는 표시하지 않음 */}
         {/* 삭제: 현재 노트 즐겨찾기 토글 버튼 */}
         <ColorPalette mode={mode} />
         <button
@@ -129,6 +128,7 @@ export default function TopBar({
           {mode === 'dark' ? '☀︎' : '🌙'}
         </button>
       </div>
+      
     </header>
   )
 }
