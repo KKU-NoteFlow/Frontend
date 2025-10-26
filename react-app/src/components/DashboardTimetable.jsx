@@ -18,9 +18,9 @@ const PX_PER_MIN = ROW_HOUR / 60
 const TIME_COL_W = 72
 const DAYS = ['월', '화', '수', '목', '금']
 
-/** 칼럼 폭 한계 */
-const DAY_W_MIN = 68
-const DAY_W_MAX = 180
+/** 칼럼 폭 한계 (가로 가독성 개선) */
+const DAY_W_MIN = 110
+const DAY_W_MAX = 220
 
 /** 로컬 스토리지 */
 const load = () => { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]') } catch { return [] } }
@@ -145,13 +145,14 @@ export default function DashboardTimetable() {
         </div>
 
         {/* 내부 컨텐츠 래퍼 */}
-        <div ref={wrapRef} style={{ width:'100%' }}>
+        <div ref={wrapRef} style={{ width:'100%', overflowX:'auto', overflowY:'hidden' }}>
           <div
             style={{
               display:'grid',
               gridTemplateColumns:`${TIME_COL_W}px repeat(${DAYS.length}, ${dayColW}px)`,
               gap: GRID_GAP,
-              width:'100%',
+              // 그리드의 최소 너비를 명시해 좁은 화면에서는 가로 스크롤로 보여줍니다.
+              minWidth: (TIME_COL_W + (1 + DAYS.length) * GRID_GAP + DAYS.length * dayColW),
               alignItems:'start'
             }}
           >
@@ -265,14 +266,15 @@ export default function DashboardTimetable() {
                             overflowY: 'auto'  // ← 내용 많으면 스크롤
                           }}
                         >
+                          {/* 제목/장소: 원래 디자인(세로 스택)으로 복원 */}
                           <div
                             style={{
                               fontWeight:800,
                               lineHeight:1.28,
                               fontSize:14,
                               whiteSpace:'pre-wrap',
-                              wordBreak:'break-word',     // ← 한국어/영문 모두 줄바꿈 허용
-                              overflowWrap:'anywhere',    // ← 아주 긴 토큰도 강제 줄바꿈
+                              wordBreak:'break-word',
+                              overflowWrap:'anywhere',
                               textShadow:'0 1px 2px rgba(0,0,0,.35)'
                             }}
                           >

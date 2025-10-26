@@ -172,7 +172,9 @@ export default function NoteDetail() {
       form,
       { headers: { Authorization: `Bearer ${token}` } }
     )
-    return data.url
+    // 이미지라면 백엔드가 제공하는 공개 URL을 우선 사용하여 즉시 표시
+    // (없으면 일반 다운로드 URL 사용)
+    return data.public_url || data.url
   }
 
   // 요약
@@ -494,34 +496,7 @@ export default function NoteDetail() {
           )}
         </div>
 
-        {note.files && note.files.length > 0 && (
-          <div className="note-attachments">
-            <h3>📎 첨부 파일</h3>
-            {note.files.map((file) => {
-              if (file.content_type?.startsWith('image/')) {
-                return (
-                  <div key={file.file_id} className="attachment">
-                    <img src={file.url} alt={file.original_name} style={{ maxWidth: '100%', margin: '8px 0' }} />
-                  </div>
-                )
-              }
-              if (file.content_type === 'application/pdf') {
-                return (
-                  <div key={file.file_id} className="attachment">
-                    <embed src={file.url} type="application/pdf" width="100%" height="500px" />
-                  </div>
-                )
-              }
-              return (
-                <div key={file.file_id} className="attachment">
-                  <a href={file.url} target="_blank" rel="noopener noreferrer">
-                    {file.original_name}
-                  </a>
-                </div>
-              )
-            })}
-          </div>
-        )}
+        {/* 첨부 파일 섹션 제거: 이미지는 본문에 자연스럽게 인라인 렌더링됩니다. */}
       </div>
     </div>
   )

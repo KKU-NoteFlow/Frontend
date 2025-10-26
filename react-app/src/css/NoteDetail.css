@@ -38,9 +38,9 @@
 
 .note-title {
   margin: 0;
-  font-size: 1.6rem;
-  font-weight: 700;
-  font-family: 'Georgia', 'Times New Roman', serif;
+  font-size: 1.9rem;
+  font-weight: 800;
+  font-family: 'Inter', 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   color: var(--nf-text);
   letter-spacing: -0.2px;
 }
@@ -109,31 +109,33 @@
 }
 
 .note-viewer__content {
-  font-family: 'Noto Serif KR', Georgia, serif;
-  font-size: 1.06rem;
+  font-family: 'Inter', 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-size: 1.02rem;
   line-height: 1.85;
   color: var(--nf-text);
   word-break: keep-all;
   overflow-wrap: anywhere;
+  /* 숫자 정렬이 고르게 되도록 설정(번호 목록 미관 향상) */
+  font-variant-numeric: tabular-nums;
 }
 
-.note-viewer__content h1,
-.note-viewer__content h2,
-.note-viewer__content h3 {
-  font-family: 'Georgia', serif;
-  margin-top: 1.8em;
-  margin-bottom: 0.7em;
-}
+.note-viewer__content h1 { font-size: 2rem; font-weight: 800; margin: 1.6em 0 0.6em; padding-bottom: .2em; border-bottom: 1px solid var(--nf-border); }
+.note-viewer__content h2 { font-size: 1.6rem; font-weight: 800; margin: 1.4em 0 .5em; padding-bottom: .15em; border-bottom: 1px solid color-mix(in oklab, var(--nf-border) 60%, transparent); }
+.note-viewer__content h3 { font-size: 1.28rem; font-weight: 700; margin: 1.2em 0 .4em; }
 
 .note-viewer__content p { margin: 0 0 1.05rem 0; }
 .note-viewer__content ul,
-.note-viewer__content ol { padding-left: 1.3rem; margin-bottom: 1rem; }
-.note-viewer__content li { margin: 0.2rem 0; }
+.note-viewer__content ol { padding-left: 1.4rem; margin: 0 0 0.9rem; list-style-position: outside; }
+.note-viewer__content li { margin: 0.25rem 0; line-height: 1.75; }
+.note-viewer__content li > ul,
+.note-viewer__content li > ol { margin-top: 0.35rem; }
+.note-viewer__content ol li::marker { font-weight: 700; color: var(--nf-muted); font-variant-numeric: tabular-nums; }
+.note-viewer__content ul li::marker { color: color-mix(in oklab, var(--nf-primary) 60%, var(--nf-text)); }
 .note-viewer__content blockquote {
   margin: 1.2rem 0;
   padding: 0.75rem 1rem;
   border-left: 4px solid var(--nf-border);
-  background: rgba(0,0,0,0.02);
+  background: color-mix(in oklab, var(--nf-border) 12%, transparent);
   border-radius: 6px;
 }
 .note-viewer__content hr {
@@ -144,7 +146,7 @@
 }
 .note-viewer__content a { color: var(--nf-primary); text-decoration: none; }
 .note-viewer__content a:hover { text-decoration: underline; }
-.note-viewer__content code { background: rgba(0,0,0,0.04); padding: 0.15em 0.35em; border-radius: 4px; }
+.note-viewer__content code { background: color-mix(in oklab, var(--nf-border) 22%, transparent); padding: 0.15em 0.35em; border-radius: 4px; }
 .note-viewer__content pre code { background: none; }
 .note-viewer__content pre {
   background: #0f1117;
@@ -154,13 +156,40 @@
   overflow: auto;
   margin: 1rem 0;
 }
-.note-viewer__content img { max-width: 100%; display: block; margin: 0.5rem auto; border-radius: 8px; }
+.note-viewer__content img {
+  /* 항상 보기 좋은 고정 폭(컨테이너 대비)으로 표시 */
+  width: clamp(220px, 78%, 720px);
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 1rem auto;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+}
+@media (max-width: 640px) {
+  .note-viewer__content img { width: 100%; margin: 0.75rem auto; }
+}
+
+/* Task list (converted from - [ ] / - [x]) */
+.note-viewer__content .task-list-item {
+  list-style: none;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.note-viewer__content .task-list-item input[type="checkbox"] {
+  margin-top: 4px;
+  accent-color: var(--nf-primary);
+}
+.note-viewer__content .task-list-item span {
+  flex: 1;
+}
 
 /* Tables */
 .note-viewer__content table {
   width: 100%;
   border-collapse: collapse;
-  margin: 1rem 0;
+  margin: 0; /* wrapped by .table-wrap, spacing there */
   font-size: 0.98rem;
 }
 .note-viewer__content th,
@@ -169,8 +198,22 @@
   padding: 10px 12px;
 }
 .note-viewer__content thead th {
-  background: rgba(0,0,0,0.03);
+  background: color-mix(in oklab, var(--nf-border) 18%, transparent);
   font-weight: 700;
+}
+.note-viewer__content tbody tr:nth-child(odd) { background: color-mix(in oklab, var(--nf-border) 8%, transparent); }
+.note-viewer__content .table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--nf-border);
+  border-radius: 10px;
+  background: var(--nf-surface);
+  margin: 1rem 0;
+}
+.note-viewer__content .table-wrap > table { min-width: 560px; }
+@media (max-width: 640px) {
+  .note-viewer__content { font-size: 1rem; }
+  .note-viewer__content .table-wrap > table { min-width: 480px; }
 }
 
 /* highlight.js baseline */
@@ -189,12 +232,40 @@
 .note-editor .markdown-body {
   background: transparent;
   color: var(--nf-text);
-  font-family: 'Noto Serif KR', Georgia, serif;
-  font-size: 1.03rem;
+  font-family: 'Inter', 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-size: 1.02rem;
   line-height: 1.8;
+  font-variant-numeric: tabular-nums;
 }
 
-.note-editor img { max-width: 100%; border-radius: 8px; }
+/* Apply similar list/table polish within the editor preview area */
+.note-editor .toastui-editor-contents ul,
+.note-editor .toastui-editor-contents ol { padding-left: 1.4rem; margin: 0 0 0.9rem; list-style-position: outside; }
+.note-editor .toastui-editor-contents li { margin: 0.25rem 0; line-height: 1.75; }
+.note-editor .toastui-editor-contents li > ul,
+.note-editor .toastui-editor-contents li > ol { margin-top: 0.35rem; }
+.note-editor .toastui-editor-contents ol li::marker { font-weight: 700; color: var(--nf-muted); font-variant-numeric: tabular-nums; }
+.note-editor .toastui-editor-contents ul li::marker { color: color-mix(in oklab, var(--nf-primary) 60%, var(--nf-text)); }
+
+.note-editor .toastui-editor-contents .table-wrap { width: 100%; overflow-x: auto; border: 1px solid var(--nf-border); border-radius: 10px; background: var(--nf-surface); margin: 1rem 0; }
+.note-editor .toastui-editor-contents .table-wrap > table { min-width: 560px; }
+@media (max-width: 640px) {
+  .note-editor .toastui-editor-contents { font-size: 1rem; }
+  .note-editor .toastui-editor-contents .table-wrap > table { min-width: 480px; }
+}
+
+.note-editor img {
+  width: clamp(220px, 78%, 720px);
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 1rem auto;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+}
+@media (max-width: 640px) {
+  .note-editor img { width: 100%; margin: 0.75rem auto; }
+}
 
 .note-editor h1, .note-editor h2, .note-editor h3 { font-family: 'Georgia', serif; color: var(--nf-text); }
 

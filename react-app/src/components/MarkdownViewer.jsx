@@ -33,7 +33,8 @@ export default function MarkdownViewer({ content }) {
 
   useEffect(() => {
     if (!contentRef.current) return
-    const imgs = Array.from(contentRef.current.querySelectorAll('img'))
+    const root = contentRef.current
+    const imgs = Array.from(root.querySelectorAll('img'))
     if (imgs.length === 0) return
     const API = import.meta.env.VITE_API_BASE_URL ?? ''
     const token = localStorage.getItem('access_token')
@@ -70,6 +71,59 @@ export default function MarkdownViewer({ content }) {
       controllers.forEach(c => { try { c.abort() } catch {} })
       createdUrls.forEach(u => { try { URL.revokeObjectURL(u) } catch {} })
     }
+  }, [rendered])
+
+  // Post-render polish: external links target, simple checklist transform
+  useEffect(() => {
+    const root = contentRef.current
+    if (!root) return
+
+    // Open links in new tab for user convenience
+    const anchors = root.querySelectorAll('a[href]')
+    anchors.forEach(a => {
+      try {
+        const href = a.getAttribute('href') || ''
+        // Treat absolute http(s) links as external
+        if (/^https?:\/\//i.test(href)) {
+          a.setAttribute('target', '_blank')
+          a.setAttribute('rel', 'noopener noreferrer')
+        }
+      } catch {}
+    })
+
+    // Convert list items starting with [ ] / [x] into checkboxes
+    const lis = root.querySelectorAll('li')
+    lis.forEach(li => {
+      const text = (li.textContent || '').trim()
+      const m = text.match(/^\[( |x|X)\]\s*(.*)$/)
+      if (!m) return
+      const checked = /x/i.test(m[1])
+      const label = m[2] || ''
+      // Clear children and rebuild structure
+      while (li.firstChild) li.removeChild(li.firstChild)
+      li.classList.add('task-list-item')
+      const cb = document.createElement('input')
+      cb.type = 'checkbox'
+      cb.checked = checked
+      cb.disabled = true
+      cb.setAttribute('aria-readonly', 'true')
+      const span = document.createElement('span')
+      span.textContent = label
+      li.appendChild(cb)
+      li.appendChild(span)
+    })
+
+    // Wrap tables for responsive horizontal scrolling
+    const tables = Array.from(root.querySelectorAll('table'))
+    tables.forEach((table) => {
+      try {
+        if (table.parentElement && table.parentElement.classList.contains('table-wrap')) return
+        const wrap = document.createElement('div')
+        wrap.className = 'table-wrap'
+        table.parentElement?.insertBefore(wrap, table)
+        wrap.appendChild(table)
+      } catch {}
+    })
   }, [rendered])
 
   return (

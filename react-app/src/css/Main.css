@@ -178,12 +178,14 @@ margin: 1em 0;
 /* 대시보드 상단 그리드: 반응형 (모바일 1열, 데스크톱 2열) */
 .dashboard-grid {
   display: grid;
-  grid-template-columns: 1.3fr 1fr;
+  /* 오른쪽(시간표) 영역에 더 넓은 가로 공간을 부여 */
+  grid-template-columns: 1fr 1.4fr;
   gap: 16px;
 }
 @media (max-width: 900px) {
   .dashboard-grid { grid-template-columns: 1fr; }
 }
+/* (이전 상태로 복원) 전용 1200px 이상 그리드 비율은 사용하지 않습니다. */
 
 /* Desktop: fix left rows to equal heights so timetable matches their sum */
 @media (min-width: 901px) {
