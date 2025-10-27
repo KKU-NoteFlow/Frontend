@@ -78,55 +78,139 @@ console.log('snippet');
     if (activeId === 'stt') return (
       <div className="panel-fade">
         <h2 className="panel-title">Speech to Text</h2>
-        <p className="panel-sub">마이크 입력을 텍스트로 변환해 아이디어를 바로 기록합니다.</p>
+        <p className="panel-sub">말하면 바로 기록됩니다. 실시간 전사로 흐름을 잃지 마세요.</p>
         <div className="panel-divider" />
-        <p className="docs-p">노트 화면 하단 작업 도크의 “녹음” 버튼을 사용하세요. 실시간 전사가 입력되며, 브라우저 정책에 따라 장시간 녹음은 자동 재시작될 수 있습니다.</p>
+        <div className="step-grid">
+          <div className="step-card">
+            <div className="step-num">1</div>
+            <div className="icon-bullet">
+              <svg viewBox="0 0 24 24"><path d="M12 5v14m7-7H5"/></svg>
+              <strong>작업 도크 열기</strong>
+            </div>
+            <p className="docs-p">우하단 <span className="kbd">+</span> 버튼으로 작업 도크를 펼칩니다.</p>
+          </div>
+          <div className="step-card">
+            <div className="step-num">2</div>
+            <div className="icon-bullet">
+              <svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 14 0h-2Z"/></svg>
+              <strong>녹음 시작/종료</strong>
+            </div>
+            <p className="docs-p">“녹음” 버튼을 눌러 시작합니다. 다시 누르면 종료됩니다. 처음 사용할 때는 마이크 권한을 허용해 주세요.</p>
+          </div>
+          <div className="step-card">
+            <div className="step-num">3</div>
+            <div className="icon-bullet">
+              <svg viewBox="0 0 24 24"><path d="M9 11l3 3 7-7"/></svg>
+              <strong>실시간 전사</strong>
+            </div>
+            <p className="docs-p">녹음 중 임시 전사는 편집 영역 위에 표시되고, 인식이 확정되면 본문에 자동 삽입됩니다.</p>
+          </div>
+        </div>
+        <p className="docs-p" style={{marginTop:12}}>
+          <span className="pill">Tip</span> 브라우저 정책에 따라 장시간 녹음은 자동 재시작될 수 있습니다. 편집 중이 아니어도 전사가 자동으로 편집 모드로 전환되어 삽입됩니다.
+        </p>
       </div>
     )
     if (activeId === 'ocr') return (
       <div className="panel-fade">
         <h2 className="panel-title">OCR (Image → Text)</h2>
-        <p className="panel-sub">이미지/문서에서 텍스트를 추출해 노트로 변환합니다. 한국어+영어(kor+eng) 인식.</p>
+        <p className="panel-sub">이미지/문서에서 텍스트를 추출해 노트로 변환합니다. 한국어+영어 인식 지원.</p>
         <div className="panel-divider" />
-        <p className="docs-p">노트 화면 하단의 작업 도크에서 “텍스트 변환”을 눌러 이미지를 업로드하세요. 결과가 충분하면 자동으로 노트가 생성되고, 짧으면 미리보기로 확인합니다.</p>
-        <div className="code-group" style={{marginTop:'12px'}}>
-          <div className="code-header">
-            <div className="code-title">API</div>
-            <button className="copy-btn" onClick={() => copy('ocr', 'POST /api/v1/files/ocr?langs=kor+eng&max_pages=50\nForm: file, (optional) folder_id')}>{copied==='ocr'?'Copied!':'Copy'}</button>
+        <div className="step-grid">
+          <div className="step-card">
+            <div className="step-num">1</div>
+            <div className="icon-bullet">
+              <svg viewBox="0 0 24 24"><path d="M12 5v14m7-7H5"/></svg>
+              <strong>작업 도크 열기</strong>
+            </div>
+            <p className="docs-p">노트 화면 우하단 <span className="kbd">+</span> 버튼을 눌러 작업 도크를 펼칩니다.</p>
           </div>
-          <pre className="docs-code">{`POST /api/v1/files/ocr?langs=kor+eng&max_pages=50
-Form: file, (optional) folder_id`}</pre>
+          <div className="step-card">
+            <div className="step-num">2</div>
+            <div className="icon-bullet">
+              <svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM8 9h8v2H8z"/></svg>
+              <strong>텍스트 변환 선택</strong>
+            </div>
+            <p className="docs-p">“텍스트 변환” 버튼을 눌러 이미지/문서를 선택합니다.<br/>지원: PNG, JPG, JPEG, TIFF, BMP, PDF, DOC, DOCX, HWP</p>
+          </div>
+          <div className="step-card">
+            <div className="step-num">3</div>
+            <div className="icon-bullet">
+              <svg viewBox="0 0 24 24"><path d="M9 11l3 3 7-7"/></svg>
+              <strong>결과 확인</strong>
+            </div>
+            <p className="docs-p">텍스트가 충분하면 노트가 자동 생성되어 열립니다. 내용이 짧으면 미리보기 모달로 확인 후 닫을 수 있어요.</p>
+          </div>
         </div>
+        <p className="docs-p" style={{marginTop:12}}><span className="pill">Tip</span> 선택한 폴더가 있으면 해당 폴더에 노트가 생성됩니다.</p>
       </div>
     )
     if (activeId === 'summarize') return (
       <div className="panel-fade">
         <h2 className="panel-title">Summarize</h2>
-        <p className="panel-sub">현재 노트에서 핵심만 추려 간결하게 요약합니다.</p>
+        <p className="panel-sub">현재 열려있는 노트의 핵심만 간결하게 정리합니다.</p>
         <div className="panel-divider" />
-        <p className="docs-p">노트 화면 하단의 작업 도크에서 “요약”을 클릭하세요. 서버가 노트 내용을 바탕으로 요약하고 결과를 반영합니다.</p>
-        <div className="code-group" style={{marginTop:'12px'}}>
-          <div className="code-header">
-            <div className="code-title">API</div>
-            <button className="copy-btn" onClick={() => copy('sum', 'POST /api/v1/notes/:id/summarize')}>{copied==='sum'?'Copied!':'Copy'}</button>
+        <div className="step-grid">
+          <div className="step-card">
+            <div className="step-num">1</div>
+            <div className="icon-bullet">
+              <svg viewBox="0 0 24 24"><path d="M3 6h18v12H3zM7 8h6v2H7z"/></svg>
+              <strong>노트 열기</strong>
+            </div>
+            <p className="docs-p">요약하고 싶은 노트를 열어 내용이 보이는 상태로 둡니다.</p>
           </div>
-          <pre className="docs-code">{`POST /api/v1/notes/:id/summarize`}</pre>
+          <div className="step-card">
+            <div className="step-num">2</div>
+            <div className="icon-bullet">
+              <svg viewBox="0 0 24 24"><path d="M12 5v14m7-7H5"/></svg>
+              <strong>작업 도크 열기</strong>
+            </div>
+            <p className="docs-p">우하단 <span className="kbd">+</span> 버튼 → “요약(AI)” 버튼을 클릭합니다.</p>
+          </div>
+          <div className="step-card">
+            <div className="step-num">3</div>
+            <div className="icon-bullet">
+              <svg viewBox="0 0 24 24"><path d="M9 11l3 3 7-7"/></svg>
+              <strong>요약 반영</strong>
+            </div>
+            <p className="docs-p">요약이 완료되면 노트에 결과가 반영됩니다. 필요하면 추가 편집하세요.</p>
+          </div>
         </div>
+        <p className="docs-p" style={{marginTop:12}}><span className="pill">Tip</span> 긴 문서는 두 번에 나눠 요약하면 더 깔끔합니다.</p>
       </div>
     )
     if (activeId === 'quiz') return (
       <div className="panel-fade">
         <h2 className="panel-title">Quiz Generator</h2>
-        <p className="panel-sub">노트 내용을 바탕으로 학습용 문제를 자동 생성합니다.</p>
+        <p className="panel-sub">현재 노트의 내용을 바탕으로 학습용 문제를 자동 생성합니다.</p>
         <div className="panel-divider" />
-        <p className="docs-p">생성된 문제 노트는 자동으로 열리고, 사이드바에서 다시 찾아볼 수 있습니다.</p>
-        <div className="code-group" style={{marginTop:'12px'}}>
-          <div className="code-header">
-            <div className="code-title">API</div>
-            <button className="copy-btn" onClick={() => copy('quiz', 'POST /api/v1/notes/:id/generate-quiz')}>{copied==='quiz'?'Copied!':'Copy'}</button>
+        <div className="step-grid">
+          <div className="step-card">
+            <div className="step-num">1</div>
+            <div className="icon-bullet">
+              <svg viewBox="0 0 24 24"><path d="M3 6h18v12H3zM7 8h6v2H7z"/></svg>
+              <strong>노트 열기</strong>
+            </div>
+            <p className="docs-p">문제로 만들고 싶은 노트를 엽니다.</p>
           </div>
-          <pre className="docs-code">{`POST /api/v1/notes/:id/generate-quiz`}</pre>
+          <div className="step-card">
+            <div className="step-num">2</div>
+            <div className="icon-bullet">
+              <svg viewBox="0 0 24 24"><path d="M12 5v14m7-7H5"/></svg>
+              <strong>작업 도크에서 “문제 생성”</strong>
+            </div>
+            <p className="docs-p">우하단 <span className="kbd">+</span> → “문제 생성” 버튼을 클릭합니다.</p>
+          </div>
+          <div className="step-card">
+            <div className="step-num">3</div>
+            <div className="icon-bullet">
+              <svg viewBox="0 0 24 24"><path d="M9 11l3 3 7-7"/></svg>
+              <strong>새 노트에서 풀이</strong>
+            </div>
+            <p className="docs-p">생성된 문제는 새 노트로 열립니다. 사이드바에서도 다시 확인할 수 있어요.</p>
+          </div>
         </div>
+        <p className="docs-p" style={{marginTop:12}}><span className="pill">Tip</span> 요약 → 문제 생성 순서로 진행하면 더 선명한 문제를 얻을 수 있습니다.</p>
       </div>
     )
     if (activeId === 'open-source') return (
