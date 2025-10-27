@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import React, { useState, useRef, useEffect, useCallback } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { Outlet, useNavigate, useParams, useLocation } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import TopBar from './Topbar'
@@ -54,11 +54,12 @@ export default function Layout() {
       window.removeEventListener('nf:ocr', onOcr)
     }
   }, [])
-  const [onSummarizeClick, setOnSummarizeClick] = useState(null)
+
   useEffect(() => {
     setSelectedFolderId(parsedFolderId)
   }, [parsedFolderId])
 
+  // ── 음성 녹음 (생략: 기존과 동일) ──────────────────────────────────────
   const handleRecord = async () => {
     const Win = window
     const SpeechRecognition = Win.SpeechRecognition || Win.webkitSpeechRecognition
@@ -97,7 +98,6 @@ export default function Layout() {
           if (res.isFinal) finalText = res[0].transcript
           else interimText = res[0].transcript
         }
-        // avoid duplicate inserts across recognition restarts
         try {
           recog._lastInsertedFinal = recog._lastInsertedFinal || ''
           if (finalText && finalText !== recog._lastInsertedFinal) {
@@ -115,15 +115,12 @@ export default function Layout() {
       }
 
       recog.onerror = (e) => {
-        // stop on fatal errors
         if (e && (e.error === 'not-allowed' || e.error === 'service-not-allowed')) {
           try { setIsRecording(false) } catch {}
         }
       }
 
-      // auto-restart when browser ends recognition (common ~5min limit)
       recog.onend = () => {
-        // if user still intends to record, restart after short delay
         if (speechRecognitionRef.current && speechRecognitionRef.current._shouldListen) {
           try {
             setTimeout(() => {
@@ -158,33 +155,32 @@ export default function Layout() {
     }
   }
 
+  // ── 요약: 동기 summarize_sync 호출로 고정 ─────────────────────────────
   const handleSummarize = async () => {
-    if (typeof onSummarizeClick === 'function') {
-      try {
-        await onSummarizeClick()
-      } catch (e) {
-        console.error('[Layout] delegated summarize failed:', e)
-      }
-      return
-    }
-
     if (!currentNote) return
     setStatusText('요약을 수행 중입니다...')
     const API = import.meta.env.VITE_API_BASE_URL ?? ''
     const token = localStorage.getItem('access_token')
     try {
-      const res = await fetch(`${API}/api/v1/notes/${currentNote.id}/summarize`, {
+      const url = `${API}/api/v1/notes/${currentNote.id}/summarize_sync?longdoc=true`
+      const res = await fetch(url, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       })
       if (!res.ok) {
-        alert('요약에 실패했습니다')
+        let body = ''
+        try { body = await res.text() } catch {}
+        console.error('[Layout] summarize_sync failed', res.status, body)
+        alert('요약에 실패했습니다.')
         setStatusText('')
         return
       }
-      const updated = await res.json()
-      setCurrentNote(updated)
-      setStatusText('요약 완료')
+      const created = await res.json() // NoteResponse
+      try { window.dispatchEvent(new Event('nf:notes-refresh')) } catch {}
+      setCurrentNote(created)
+      navigate(`/notes/${created.id}`)
+      setToast({ open: true, message: '요약이 생성되었습니다.', variant: 'success' })
+      setStatusText('')
     } catch (err) {
       console.error('[Layout] 요약 중 예외:', err)
       alert('요약 처리 중 오류가 발생했습니다.')
@@ -209,7 +205,6 @@ export default function Layout() {
         return
       }
       const created = await res.json()
-      // created is expected to be a list of NoteResponse; open the first one if present
       if (Array.isArray(created) && created.length > 0) {
         const first = created[0]
         try { window.dispatchEvent(new Event('nf:notes-refresh')) } catch (e) {}
@@ -225,8 +220,6 @@ export default function Layout() {
     }
   }
 
-  
-
   const toggleFavorite = async () => {
     if (!currentNote) return
     const API = import.meta.env.VITE_API_BASE_URL ?? ''
@@ -238,9 +231,7 @@ export default function Layout() {
 
       const url = `${API}/api/v1/notes/${currentNote.id}/favorite`
       const bodyData = { is_favorite: newFav }
-      try {
-        console.log('[Layout] toggleFavorite request', { url, body: bodyData })
-      } catch {}
+      try { console.log('[Layout] toggleFavorite request', { url, body: bodyData }) } catch {}
 
       const res = await fetch(url, {
         method: 'PATCH',
@@ -272,6 +263,7 @@ export default function Layout() {
 
   const handleNewNote = () => navigate('/notes/new')
 
+  // ── 파일 업로드/OCR (기존과 동일; 버그 수정 포함) ─────────────────────
   const fileInputRef = useRef()
   const [uploadTargetFolderId, setUploadTargetFolderId] = useState(null)
   const [fileUploadTimestamp, setFileUploadTimestamp] = useState(0)
@@ -317,9 +309,7 @@ export default function Layout() {
         }
       }
 
-      console.log(
-        `[Layout] 파일 업로드 요청 → "${file.name}" → 폴더 ${folderIdToUpload}`
-      )
+      console.log(`[Layout] 파일 업로드 요청 → "${file.name}" → 폴더 ${folderIdToUpload}`)
 
       try {
         const res = await fetch(`${API}/api/v1/files/upload`, {
@@ -330,15 +320,13 @@ export default function Layout() {
         if (!res.ok) {
           setToast({ open: true, message: `업로드 실패: ${file.name}`, variant: 'error' })
         } else {
-          // parse uploaded file info
           let uploaded = null
-          try { uploaded = await res.json() } catch(e) { uploaded = null }
+          try { uploaded = await res.json() } catch (e) { uploaded = null }
           setToast({ open: true, message: `업로드 성공: ${file.name}`, variant: 'success' })
           try { localStorage.setItem('nf-last-upload-folder', String(folderIdToUpload)) } catch {}
 
-          // If server returned a file url, create a note containing the image (to match drag-n-drop behavior)
           try {
-            const fileUrl = uploaded && (uploaded.url || uploaded.file_url || uploaded.file_url)
+            const fileUrl = uploaded && (uploaded.url || uploaded.file_url)
             if (fileUrl) {
               const noteBody = {
                 title: uploaded.original_name || file.name || '첨부된 파일',
@@ -351,7 +339,7 @@ export default function Layout() {
                 body: JSON.stringify(noteBody),
               })
               if (noteRes.ok) {
-                // nothing else needed here; we'll refresh lists after loop
+                // list refresh handled after loop
               }
             }
           } catch (e) {}
@@ -374,7 +362,6 @@ export default function Layout() {
     try { window.dispatchEvent(new Event('nf:notes-refresh')) } catch {}
   }
 
-  // ── OCR ──────────────────────────────────────────────────────────
   const ocrInputRef = useRef()
   const [showModal, setShowModal] = useState(false)
   const [modalTitle, setModalTitle] = useState('')
@@ -395,7 +382,6 @@ export default function Layout() {
     const baseName = file.name.replace(/\.[^/.]+$/, '')
     const formData = new FormData()
     formData.append('file', file)
-    // ✅ folder_id는 선택됐을 때만 보냄(422 방지)
     if (selectedFolderId != null) {
       formData.append('folder_id', String(selectedFolderId))
     }
@@ -406,7 +392,6 @@ export default function Layout() {
 
     try {
       setOpProgress({ visible: true, label: 'OCR 업로드', value: 30 })
-      // ✅ 잘못된 koreng → 올바른 kor+eng 로 고정(필요하면 설정에서 변경 가능)
       const langs = 'kor+eng'
       const maxPages = 50
       const res = await fetch(`${API}/api/v1/files/ocr?langs=${encodeURIComponent(langs)}&max_pages=${encodeURIComponent(maxPages)}`, {
@@ -424,8 +409,6 @@ export default function Layout() {
 
       const ocr = await res.json()
       const { note_id, text = '', warnings = [], results = [] } = ocr
-
-      // ✅ 결과 텍스트가 짧으면(<= 8자) 자동 생성/이동하지 않고 미리보기만 띄움
       const shortText = (text || '').trim()
       const tooShort = shortText.length <= 8
 
@@ -442,7 +425,6 @@ export default function Layout() {
         return
       }
 
-      // 노트 미생성 또는 결과가 너무 짧을 때 → 모달 표시
       let bodyHtml = `<h3>${baseName} OCR 결과</h3>`
       if (Array.isArray(results) && results.length) {
         const pages = results
@@ -512,7 +494,7 @@ export default function Layout() {
               filter,
               selectedFolderId,
               fileUploadTimestamp,
-              setOnSummarizeClick,
+              setOnSummarizeClick: null, // summarize는 Layout이 직접 처리
               setOnSttInsert,
               setOnSttInterimInsert,
               isRecording,
@@ -542,11 +524,11 @@ export default function Layout() {
           statusText={statusText}
           isRecording={isRecording}
           onRecordClick={handleRecord}
-          onSummarizeClick={onSummarizeClick}
+          onSummarizeClick={handleSummarize}
           onUploadClick={handleUploadClick}
           onOcrClick={handleOcrClick}
-            onGenerateClick={handleGenerateQuiz}
-          />
+          onGenerateClick={handleGenerateQuiz}
+        />
         )}
 
         <Toast open={toast.open} message={toast.message} variant={toast.variant} onClose={() => setToast({ ...toast, open: false })} />
@@ -579,10 +561,3 @@ export default function Layout() {
     </div>
   )
 }
-/*
-  Component: Layout
-  Role: Shared shell around app pages — renders Topbar, Sidebar, and main Outlet area.
-  Notes:
-   - Orchestrates sidebar state (pinned/hidden/temporary) and passes handlers down.
-   - Keeps consistent app chrome and spacing across nested routes.
-*/
