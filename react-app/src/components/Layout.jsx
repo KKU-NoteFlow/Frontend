@@ -192,31 +192,117 @@ export default function Layout() {
     if (!currentNote) return
     const API = import.meta.env.VITE_API_BASE_URL ?? ''
     const token = localStorage.getItem('access_token')
+
     try {
-      const res = await fetch(`${API}/api/v1/notes/${currentNote.id}/generate-quiz`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      const text = currentNote.content || currentNote.contentHTML || ''
+      if (!text || String(text).trim().length < 50) {
+        alert('문제 생성을 위해 노트의 내용이 충분하지 않습니다. 더 긴 텍스트를 사용해 주세요.')
+        return
+      }
+
+      setStatusText('예상 문제 생성 요청 중...')
+      const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+      const reqBody = {
+        text: text,
+        num_questions: 5,
+        question_type: 'multiple_choice',
+        language: 'ko'
+      }
+
+      const res = await fetch(`${API}/qg/generate`, { method: 'POST', headers, body: JSON.stringify(reqBody) })
       if (!res.ok) {
         let body = ''
         try { body = await res.text() } catch {}
-        console.error('[Layout] generate-quiz failed', res.status, body)
+        console.error('[Layout] qg generate failed', res.status, body)
         alert('예상 문제 생성에 실패했습니다.')
+        setStatusText('')
         return
       }
-      const created = await res.json()
-      if (Array.isArray(created) && created.length > 0) {
-        const first = created[0]
-        try { window.dispatchEvent(new Event('nf:notes-refresh')) } catch (e) {}
-        setCurrentNote(first)
-        navigate(`/notes/${first.id}`)
-        setToast({ open: true, message: '예상 문제가 생성되었습니다.', variant: 'success' })
-      } else {
-        alert('예상 문제가 생성되었지만 반환된 데이터가 비어있습니다.')
+
+      const data = await res.json()
+      const questions = Array.isArray(data?.questions) ? data.questions : (Array.isArray(data) ? data : [])
+      if (!questions.length) {
+        alert('생성된 문제가 없습니다.')
+        setStatusText('')
+        return
       }
+
+      // Aggregate all generated questions into two notes: 하나의 '문제' 노트와 하나의 '답안' 노트
+      const baseTitle = (currentNote.title || 'Untitled').trim()
+      const questionTitle = `${baseTitle} 문제`
+      const answerTitle = `${baseTitle} 답안`
+
+      // Build question note content
+      let questionMd = `# ${questionTitle}\n\n`
+      questions.forEach((q, i) => {
+        const idx = i + 1
+        questionMd += `### 문제 ${idx}\n\n${q.question}\n\n`
+        if (Array.isArray(q.options) && q.options.length) {
+          q.options.forEach((opt, oi) => { questionMd += `${oi + 1}. ${opt}\n` })
+          questionMd += `\n`
+        }
+        // 문제 간 마크다운 구분선 추가 (마크다운에서 수평선)
+        if (i < questions.length - 1) questionMd += `---\n\n`
+      })
+
+      // Build answer note content
+      let answerMd = `# ${answerTitle}\n\n`
+      questions.forEach((q, i) => {
+        const idx = i + 1
+        const preview = q.question && q.question.length > 200 ? q.question.slice(0,200) + '...' : (q.question || '')
+        answerMd += `### 답안 ${idx}\n\n질문 미리보기: ${preview}\n\n정답: ${q.answer}\n\n`
+        // 답안 사이 구분선 추가
+        if (i < questions.length - 1) answerMd += `---\n\n`
+      })
+
+      // Create question note
+      const qRes = await fetch(`${API}/api/v1/notes`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ title: questionTitle, content: questionMd, folder_id: currentNote.folder_id })
+      })
+      let qCreated = null
+      if (qRes.ok) {
+        try { qCreated = await qRes.json() } catch (e) { qCreated = null }
+      } else {
+        console.error('[Layout] create aggregated question note failed', await qRes.text().catch(() => ''))
+      }
+
+      // Create answer note
+      const aRes = await fetch(`${API}/api/v1/notes`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ title: answerTitle, content: answerMd, folder_id: currentNote.folder_id })
+      })
+      if (!aRes.ok) {
+        console.error('[Layout] create aggregated answer note failed', await aRes.text().catch(() => ''))
+      }
+
+      try { window.dispatchEvent(new Event('nf:notes-refresh')) } catch (e) {}
+      if (qCreated) {
+        setCurrentNote(qCreated)
+        navigate(`/notes/${qCreated.id}`)
+        setToast({ open: true, message: '문제 및 답안 노트가 생성되었습니다.', variant: 'success' })
+      } else {
+        // Fallback: create two empty notes if aggregation failed
+        const fallbackQ = await fetch(`${API}/api/v1/notes`, { method: 'POST', headers, body: JSON.stringify({ title: questionTitle, content: '', folder_id: currentNote.folder_id }) })
+        const fallbackA = await fetch(`${API}/api/v1/notes`, { method: 'POST', headers, body: JSON.stringify({ title: answerTitle, content: '', folder_id: currentNote.folder_id }) })
+        try { window.dispatchEvent(new Event('nf:notes-refresh')) } catch (e) {}
+        if (fallbackQ.ok) {
+          const created = await fallbackQ.json()
+          setCurrentNote(created)
+          navigate(`/notes/${created.id}`)
+          setToast({ open: true, message: '기본 문제/답안 노트를 생성했습니다.', variant: 'success' })
+        } else {
+          alert('노트 생성에 실패했습니다. 콘솔을 확인하세요.')
+        }
+      }
+
+      setStatusText('')
     } catch (err) {
       console.error('[Layout] generate-quiz exception', err)
       alert('예상 문제 생성 중 오류가 발생했습니다.')
+      setStatusText('')
     }
   }
 
