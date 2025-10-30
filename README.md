@@ -43,11 +43,21 @@
 ## 화면
 
 <p align="center">
-  <!-- 이미지는 나중에 교체해주세요 -->
-  <img src="./assets/login.png" alt="로그인" width="45%">
-  <img src="./assets/main.png" alt="메인/노트 리스트" width="45%"><br/>
-  <img src="./assets/editor.png" alt="마크다운 편집기" width="45%">
-  <img src="./assets/detail.png" alt="노트 상세" width="45%">
+  <!-- 로그인 및 문서 -->
+  <img src="./assets/login.jpg" alt="간편 로그인 및 회원가입" width="45%">
+  <img src="./assets/Document.jpg" alt="문서 제공 화면" width="45%"><br/>
+
+  <!-- 통계 및 테마 -->
+  <img src="./assets/main.jpg" alt="학습 통계 및 분석" width="45%">
+  <img src="./assets/theme.jpg" alt="자유로운 테마 선택 기능" width="45%"><br/>
+
+  <!-- OCR 및 음성 기능 -->
+  <img src="./assets/OCR.jpg" alt="Image to Text 기능" width="45%">
+  <img src="./assets/Record.jpg" alt="실시간 음성 녹음 및 변환" width="45%"><br/>
+
+  <!-- 요약 및 문제 생성 -->
+  <img src="./assets/Summary.jpg" alt="요약 기능" width="45%">
+  <img src="./assets/Create_P.jpg" alt="예상 문제 자동 생성" width="45%">
 </p>
 
 ---
